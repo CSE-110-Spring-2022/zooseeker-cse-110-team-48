@@ -1,4 +1,4 @@
-name: Run Android Unit Tests
+name: Run Database Unit Tests
 on: [push]
 
 jobs:
