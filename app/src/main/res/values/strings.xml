@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">ZooSeeker</string>
+    <string name="planned_exhibit_text">Exhibit, Street, distance</string>
+    <string name="list_delete_x">x</string>
 </resources>
