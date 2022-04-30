@@ -8,11 +8,21 @@
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/locations_view"
-        android:layout_width="409dp"
-        android:layout_height="729dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_width="405dp"
+        android:layout_height="620dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/Close"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Close"
+        android:onClick="onClosedCLicked"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/locations_view" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
