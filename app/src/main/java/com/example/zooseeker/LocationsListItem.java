@@ -1,6 +1,7 @@
 package com.example.zooseeker;
 
 import android.content.Context;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.room.Entity;
@@ -16,6 +17,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -49,12 +51,14 @@ public class LocationsListItem {
         Graph<String, IdentifiedWeightedEdge> graph =
                 ZooData.loadZooGraphJSON(context, path);
 
-        List<LocationsListItem> vertexList = Collections.emptyList();
+        List<LocationsListItem> vertexList = new ArrayList<LocationsListItem>();
         Set<String> graphVertices = graph.vertexSet();
         int order = 1;
 
         for (String vertex : graphVertices) {
-            vertexList.add(new LocationsListItem(vertex, 0, order++));
+            LocationsListItem item = new LocationsListItem(vertex, 0, order++);
+            vertexList.add(item);
+            Log.d("Added Vertex", vertex);
         }
         return vertexList;
     }

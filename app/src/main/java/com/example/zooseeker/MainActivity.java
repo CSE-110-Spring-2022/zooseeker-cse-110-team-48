@@ -31,6 +31,7 @@ public class MainActivity extends AppCompatActivity {
         Intent locationIntent = new Intent(this, LocationsListActivity.class);
         startActivity(locationIntent);
 
+        /*
         //Create graph
         Graph<String, DefaultWeightedEdge> g = null;
         try {
@@ -42,6 +43,7 @@ public class MainActivity extends AppCompatActivity {
 
         //Tests the generated graph against a shortest algorithm function from jgrpaht
         calculateShortestPath(g);
+        */
     }
 
     public void calculateShortestPath(Graph<String, DefaultWeightedEdge> g) {

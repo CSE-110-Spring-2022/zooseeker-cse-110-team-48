@@ -10,6 +10,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.function.Consumer;
 
 public class LocationsListAdapter extends RecyclerView.Adapter<LocationsListAdapter.ViewHolder>{
@@ -53,12 +54,14 @@ public class LocationsListAdapter extends RecyclerView.Adapter<LocationsListAdap
 
     public class ViewHolder extends RecyclerView.ViewHolder {
         private final TextView textView;
+        private final TextView distanceView;
         private LocationsListItem locationItem;
         private final TextView delete;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             this.textView = itemView.findViewById(R.id.location_item_text);
+            this.distanceView = itemView.findViewById(R.id.distance_text);
             this.delete = itemView.findViewById(R.id.delete_btn);
 
             this.delete.setOnClickListener(view -> {
@@ -68,9 +71,12 @@ public class LocationsListAdapter extends RecyclerView.Adapter<LocationsListAdap
         }
 
         public LocationsListItem getLocationItem() {return locationItem; }
+        public double getDistance() {return locationItem.distance; }
+
         public void setLocationItem(LocationsListItem locationItem) {
             this.locationItem = locationItem;
             this.textView.setText(locationItem.text);
+            this.distanceView.setText(String.format(Locale.getDefault(), "%f", locationItem.distance));
         }
     }
 
