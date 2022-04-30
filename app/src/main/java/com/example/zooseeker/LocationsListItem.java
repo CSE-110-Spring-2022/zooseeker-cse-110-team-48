@@ -9,6 +9,8 @@ import androidx.room.PrimaryKey;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
+import org.jgrapht.Graph;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -16,6 +18,7 @@ import java.io.Reader;
 import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 @Entity(tableName = "locations_list_items")
 public class LocationsListItem {
@@ -43,15 +46,16 @@ public class LocationsListItem {
     }
 
     public static List<LocationsListItem> loadJSON(Context context, String path) {
-        try {
-            InputStream input = context.getAssets().open(path);
-            Reader reader = new InputStreamReader(input);
-            Gson gson = new Gson();
-            Type type = new TypeToken<List<LocationsListItem>>(){}.getType();
-            return gson.fromJson(reader, type);
-        } catch (IOException e) {
-            e.printStackTrace();
-            return Collections.emptyList();
+        Graph<String, IdentifiedWeightedEdge> graph =
+                ZooData.loadZooGraphJSON(context, path);
+
+        List<LocationsListItem> vertexList = Collections.emptyList();
+        Set<String> graphVertices = graph.vertexSet();
+        int order = 1;
+
+        for (String vertex : graphVertices) {
+            vertexList.add(new LocationsListItem(vertex, 0, order++));
         }
+        return vertexList;
     }
 }
