@@ -11,8 +11,11 @@ import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.Adapter;
+import android.widget.AdapterView;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
+import android.widget.ListView;
 import android.widget.SearchView;
 import android.widget.ArrayAdapter;
 
@@ -26,6 +29,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
@@ -36,11 +40,14 @@ public class MainActivity extends AppCompatActivity {
     public final String EDGE_INFO = "sample_edge_info.json";
 
     // ViewModel for database
+    private LocationsDatabase db;
     private LocationsListViewModel viewModel;
+    private LocationsListItemDao locationsListItemDao;
 
     // Search domain
     protected ArrayList<String> searchList;
-    private ArrayAdapter<String> searchAdapter;
+    private ArrayAdapter<String> arrayAdapter;
+    private ListView suggestions;
 
     @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
@@ -59,26 +66,30 @@ public class MainActivity extends AppCompatActivity {
             searchList.add(vertexInfo.get(location).name);
         }
 
-        searchAdapter = new ArrayAdapter<String>(this, android.R.layout.select_dialog_item, searchList);
-
         this.viewModel = new ViewModelProvider(this).get(LocationsListViewModel.class);
+        Context context = getApplication().getApplicationContext();
+        db = LocationsDatabase.getSingleton(context);
+        locationsListItemDao = db.locationsListItemDao();
 
-        SearchView searchBar = findViewById(R.id.search_bar);
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.select_dialog_item, searchList);
+        AutoCompleteTextView actv = (AutoCompleteTextView) findViewById(R.id.search_field);
+        actv.setThreshold(1);
+        actv.setAdapter(adapter);
+
         Button planningListButton = findViewById(R.id.view_list_btn);
 
-        searchBar.setOnQueryTextListener(
-                new SearchView.OnQueryTextListener() {
+        actv.setOnItemClickListener(
+                new AdapterView.OnItemClickListener() {
                     @Override
-                    public boolean onQueryTextSubmit(String query) {
-                        if (searchList.contains(query)) {
-                            viewModel.createLocation(query);
+                    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                        List<LocationsListItem> curr_db = locationsListItemDao.getAll();
+                        String query = adapter.getItem(position).toString();
+                        for (LocationsListItem location : curr_db) {
+                            if (location.text.equals(query)) {
+                                return;
+                            }
                         }
-                        return false;
-                    }
-
-                    @Override
-                    public boolean onQueryTextChange(String newText) {
-                        return false;
+                        viewModel.createLocation(query);
                     }
                 }
         );
@@ -90,23 +101,6 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
         );
-
-        //Intent locationIntent = new Intent(this, LocationsListActivity.class);
-        //startActivity(locationIntent);
-
-        /*
-        //Create graph
-        Graph<String, DefaultWeightedEdge> g = null;
-        try {
-            //Reads in graph from JSON file
-            g = createGraphFromJSON(this,"sample_graph.json");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        //Tests the generated graph against a shortest algorithm function from jgrpaht
-        calculateShortestPath(g);
-        */
     }
 
     /**
