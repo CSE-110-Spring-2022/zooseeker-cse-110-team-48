@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">ZooSeeker</string>
+    <string name="prev">Prev</string>
+    <string name="next">Next</string>
 </resources>
