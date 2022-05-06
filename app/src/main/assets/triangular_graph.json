@@ -1,0 +1,27 @@
+{
+  "nodes": [
+    {"id": "entrance_exit_gate"},
+    {"id": "lions"},
+    {"id": "gators"}
+  ],
+  "edges": [
+    {
+      "id": "edge-0",
+      "source": "entrance_exit_gate",
+      "target": "lions",
+      "weight": 210.0
+    },
+    {
+      "id": "edge-1",
+      "source": "lions",
+      "target": "gators",
+      "weight": 190.0
+    },
+    {
+      "id": "edge-2",
+      "source": "gators",
+      "target": "entrance_exit_gate",
+      "weight": 200.0
+    }
+  ]
+}
