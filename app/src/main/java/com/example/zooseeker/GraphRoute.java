@@ -5,23 +5,34 @@ import org.jgrapht.alg.shortestpath.DijkstraShortestPath;
 import org.jgrapht.graph.*;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**\
- * This class uses a shortest-path TSP heuristic to find a short cycle, given vertices to visit.
+ * This class represents an exhibit route, plotted using a TSP heuristic
  */
-public class GraphRouteFinder {
+public class GraphRoute {
+
+    GraphPath<String, IdentifiedWeightedEdge> pathEdges;
+    ArrayList<String> exhibitOrder = new ArrayList<String>();
+    Graph<String, IdentifiedWeightedEdge> zooGraph;
+    Map<String, Double> exhibitDistances = new HashMap<>();
+
     /**
-     * TSP shortest-path heuristic. Returns a cycle starting and ending at startVertex,
-     *  passing through targets.
+     * Route constructor, using a TSP shortest-path heuristic.
+     *  Returns a cycle starting and ending at startVertex, passing through targets.
      * @param zooGraph - graph to operate on
      * @param startVertex - starting and ending point
      * @param targets - list of exhibits to visit, EXCLUDING startVertex
-     * @return Path emulating TSP solution
      */
-    public static GraphPath<String, IdentifiedWeightedEdge> findRoute(
+    public GraphRoute(
             Graph<String, IdentifiedWeightedEdge> zooGraph,
             ArrayList<String> targets,
             String startVertex) {
+
+        // Set route's graph
+        this.zooGraph = zooGraph;
 
         // Unvisited targets array keeps track of which vertices to find a path to
         ArrayList<String> unvisitedTargets = new ArrayList<String>(targets);
@@ -59,8 +70,10 @@ public class GraphRouteFinder {
             }
             totalWeight += currPath.getWeight();
 
-            // Update current exhibit
+            // Update current exhibit, and add exhibit to route fields
             currVertex = closestVertex;
+            exhibitOrder.add(closestVertex);
+            exhibitDistances.put(closestVertex, totalWeight);
             unvisitedTargets.remove(closestVertex);
         }
 
@@ -71,6 +84,45 @@ public class GraphRouteFinder {
         }
         totalWeight += currPath.getWeight();
 
-        return new GraphWalk<String, IdentifiedWeightedEdge>(zooGraph, startVertex, startVertex, totalEdges, totalWeight);
+        this.pathEdges = new GraphWalk<String, IdentifiedWeightedEdge>(
+                zooGraph, startVertex, startVertex, totalEdges, totalWeight);
+    }
+
+    /**
+     * Getter for edge list of route cycle
+     * @return list of edges from route cycle
+     */
+    public List<IdentifiedWeightedEdge> getEdgeList() {
+        return this.pathEdges.getEdgeList();
+    }
+
+    /**
+     * Getter for the route walk
+     * @return GraphPath containing route to traverse
+     */
+    public GraphPath<String, IdentifiedWeightedEdge> getPathEdges() {
+        return pathEdges;
+    }
+
+    /**
+     * Returns the list of exhibits to visit, in order in the cycle.
+     *  Does NOT include startVertex.
+     * @return
+     */
+    public ArrayList<String> exhibitsInOrder() {
+        return this.exhibitOrder;
+    }
+
+    /**
+     * Find route distance for an exhibit
+     * @param exhibit - name of exhibit to find route
+     * @return distance to get to exhibit. -1 if invalid exhibit.
+     */
+    public double getRouteDistance(String exhibit) {
+        try {
+            return exhibitDistances.get(exhibit);
+        } catch (NullPointerException e) {
+            return -1;
+        }
     }
 }

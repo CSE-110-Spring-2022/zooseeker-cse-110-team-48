@@ -6,8 +6,10 @@ import android.content.Context;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
+import org.checkerframework.checker.units.qual.A;
 import org.jgrapht.Graph;
 import org.jgrapht.GraphPath;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -38,8 +40,16 @@ public class ZooRouteTest {
         targets.add("lions");
         targets.add("gators");
 
-        GraphPath<String, IdentifiedWeightedEdge> route = GraphRouteFinder.findRoute(zooGraph, targets, "entrance_exit_gate");
-        assertEquals(3, route.getLength());
+        GraphRoute route = new GraphRoute(zooGraph, targets, "entrance_exit_gate");
+        assertEquals(3, route.getPathEdges().getLength());
+
+        ArrayList<String> expectedOrder = new ArrayList<String>();
+        expectedOrder.add("gators");
+        expectedOrder.add("lions");
+        Assert.assertEquals(expectedOrder, route.exhibitsInOrder());
+
+        Assert.assertEquals(200.0, route.getRouteDistance("gators"), 0.01);
+        Assert.assertEquals(390.0, route.getRouteDistance("lions"), 0.01);
     }
 
     @Test
@@ -51,8 +61,13 @@ public class ZooRouteTest {
         targets.add("gorillas");
         targets.add("gators");
 
-        GraphPath<String, IdentifiedWeightedEdge> route = GraphRouteFinder.findRoute(zooGraph, targets, "entrance_exit_gate");
-        assertEquals(6, route.getLength());
+        GraphRoute route = new GraphRoute(zooGraph, targets, "entrance_exit_gate");
+        assertEquals(6, route.getPathEdges().getLength());
+
+        ArrayList<String> expectedOrder = new ArrayList<String>();
+        expectedOrder.add("gators");
+        expectedOrder.add("gorillas");
+        Assert.assertEquals(expectedOrder, route.exhibitsInOrder());
     }
 
 }
