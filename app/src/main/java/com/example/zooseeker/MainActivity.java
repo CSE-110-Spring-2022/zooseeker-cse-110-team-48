@@ -77,6 +77,7 @@ public class MainActivity extends AppCompatActivity {
         actv.setAdapter(adapter);
 
         Button planningListButton = findViewById(R.id.view_list_btn);
+        Button planRouteButton = findViewById(R.id.plan_route_btn);
 
         actv.setOnItemClickListener(
                 new AdapterView.OnItemClickListener() {
@@ -101,6 +102,14 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
         );
+
+        planRouteButton.setOnClickListener(
+                new View.OnClickListener() {
+                    public void onClick(View v) {
+                        launchRoutePlan(v);
+                    }
+                }
+        );
     }
 
     /**
@@ -109,6 +118,11 @@ public class MainActivity extends AppCompatActivity {
      */
     public void launchPlanningList(View view) {
         Intent intent = new Intent(this, LocationsListActivity.class);
+        startActivity(intent);
+    }
+
+    public void launchRoutePlan(View view) {
+        Intent intent = new Intent(this, RouteActivity.class);
         startActivity(intent);
     }
 
