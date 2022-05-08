@@ -11,9 +11,13 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 
+import org.jgrapht.Graph;
+
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 public class LocationsListActivity extends AppCompatActivity {
     public RecyclerView recyclerView;
@@ -23,6 +27,9 @@ public class LocationsListActivity extends AppCompatActivity {
     public String graph_file;
     public String node_info_file;
     public String edge_info_file;
+
+    List<String> exhibitsInPlan;
+    GraphRoute route;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,23 +61,45 @@ public class LocationsListActivity extends AppCompatActivity {
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(adapter);
 
-        // Sorting the planning list by name. Default should be based on when it's added
-        //List<LocationsListItem> loadedList = LocationsListItem.loadJSON(this, "sample_zoo_graph.json");
-//        Collections.sort(loadedList, new Comparator<LocationsListItem>() {
-//            @Override
-//            public int compare(LocationsListItem t1, LocationsListItem t2) {
-//                return t1.text.compareTo(t2.text);
-//            }
-//        });
+        Graph<String, IdentifiedWeightedEdge> zooGraph = ZooData.loadZooGraphJSON(this, graph_file);
+        Map<String, ZooData.VertexInfo> vertexInfo = ZooData.loadVertexInfoJSON(this, node_info_file);
+        Map<String, ZooData.EdgeInfo> edgeInfo = ZooData.loadEdgeInfoJSON(this, edge_info_file);
 
-        //adapter.setLocationsListItems(loadedList);
+        LocationsDatabase db = LocationsDatabase.getSingleton(this);
+        LocationsListItemDao locationsListItemDao = db.locationsListItemDao();
+
+        List<LocationsListItem> exhibitsToVisit = locationsListItemDao.getAll();
+        ArrayList<String> targets = new ArrayList<String>();
+        for (LocationsListItem element : exhibitsToVisit) {
+            targets.add(element.textId);
+        }
+
+        this.route = new GraphRoute(zooGraph, vertexInfo, edgeInfo, targets, "entrance_exit_gate");
+        this.exhibitsInPlan = route.exhibitsInOrder();
+
+        List<LocationsListItem> unorderedExhibits = locationsListItemDao.getAll();
+        locationsListItemDao.deleteAll();
+
+        for(int i = 1; i < exhibitsInPlan.size() - 1; i++ ) {
+            String location = exhibitsInPlan.get(i);
+            String properName = "";
+            for (LocationsListItem item : unorderedExhibits) {
+                if (item.textId.equals(location)) {
+                    properName = item.text;
+                }
+            }
+            double distance = route.getRouteDistance(location);
+            viewModel.createLocation(properName, location, distance);
+        }
 
     }
     public void launchRoutePlan(View view) {
         Intent intent = new Intent(this, RouteActivity.class);
-        intent.putExtra("graph_file", this.graph_file);
-        intent.putExtra("vertex_file", this.node_info_file);
-        intent.putExtra("edge_file", this.edge_info_file);
+        ArrayList<String> directions = new ArrayList<>();
+        while (!this.route.reachedEnd()) {
+            directions.add(GraphRoute.condenseDirectionsList(route.advanceToNextExhibit()));
+        }
+        intent.putExtra("directions_list", directions);
         startActivity(intent);
     }
 

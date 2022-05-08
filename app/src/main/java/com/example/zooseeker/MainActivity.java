@@ -94,8 +94,6 @@ public class MainActivity extends AppCompatActivity {
         Button planningListButton = findViewById(R.id.view_list_btn);
         updateListCount();
 
-
-
         actv.setOnItemClickListener(
                 new AdapterView.OnItemClickListener() {
                     @Override
@@ -115,7 +113,7 @@ public class MainActivity extends AppCompatActivity {
                                 vertexId = key;
                             }
                         }
-                        viewModel.createLocation(query, vertexId);
+                        viewModel.createLocation(query, vertexId, 0);
                         updateListCount();
                     }
                 }
@@ -153,6 +151,6 @@ public class MainActivity extends AppCompatActivity {
         locationsListItemDao = db.locationsListItemDao();
 
         Button planningListButton = findViewById(R.id.view_list_btn);
-        planningListButton.setText("View Planning List (" + locationsListItemDao.getDataCount() + ")");
+        planningListButton.setText("Plan (" + locationsListItemDao.getDataCount() + ")");
     }
 }

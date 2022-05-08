@@ -36,9 +36,9 @@ public class LocationsListViewModel extends AndroidViewModel {
         locationsListItems = locationsListItemDao.getAllLive();
     }
 
-    public void createLocation(String text, String textId) {
+    public void createLocation(String text, String textId, double distance) {
         int endOfListOrder = locationsListItemDao.getOrderForAppend();
-        LocationsListItem newItem = new LocationsListItem(text, textId, 0.0, endOfListOrder);
+        LocationsListItem newItem = new LocationsListItem(text, textId, distance, endOfListOrder);
         locationsListItemDao.insert(newItem);
     }
     public void deleteLocation(LocationsListItem locationsListItem) {

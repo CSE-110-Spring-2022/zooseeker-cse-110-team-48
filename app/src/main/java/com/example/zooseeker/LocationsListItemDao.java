@@ -20,6 +20,9 @@ public interface LocationsListItemDao {
     @Query("SELECT * from `locations_list_items` WHERE `id`=:id")
     LocationsListItem get(long id);
 
+    @Query("SELECT * from `locations_list_items` WHERE `textId`=:textId")
+    LocationsListItem get(String textId);
+
     @Query("SELECT * from `locations_list_items` ORDER BY `order`")
     List<LocationsListItem> getAll();
 

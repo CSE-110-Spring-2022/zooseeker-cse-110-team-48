@@ -6,6 +6,7 @@ import org.jgrapht.*;
 import org.jgrapht.alg.shortestpath.DijkstraShortestPath;
 import org.jgrapht.graph.*;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -241,5 +242,13 @@ public class GraphRoute {
      */
     public boolean reachedEnd() {
         return nextExhibitIndex + 1 >= exhibitOrder.size();
+    }
+
+    public static String condenseDirectionsList(ArrayList<String> list) {
+        String finalString = "";
+        for (String s : list) {
+            finalString = finalString + s + "\n";
+        }
+        return finalString;
     }
 }
