@@ -7,13 +7,13 @@
     tools:context=".RouteActivity">
 
     <Button
-        android:id="@+id/prev_route_button"
+        android:id="@+id/exit_button"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
         android:layout_marginTop="667dp"
         android:layout_marginBottom="16dp"
-        android:text="@string/prev"
+        android:text="@string/exit"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/next_route_button"
         app:layout_constraintStart_toStartOf="parent"
@@ -30,16 +30,26 @@
         android:text="@string/next"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/prev_route_button"
+        app:layout_constraintStart_toEndOf="@+id/exit_button"
         app:layout_constraintTop_toTopOf="parent" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/route_view"
         android:layout_width="409dp"
-        android:layout_height="665dp"
+        android:layout_height="300dp"
         android:layout_marginBottom="8dp"
-        app:layout_constraintBottom_toTopOf="@+id/prev_route_button"
+        app:layout_constraintBottom_toTopOf="@+id/exit_button"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="1.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.008" />
+
+    <TextView
+        android:id="@+id/directions"
+        android:layout_width="413dp"
+        android:layout_height="358dp"
+        android:text=""
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/route_view" />
 </androidx.constraintlayout.widget.ConstraintLayout>

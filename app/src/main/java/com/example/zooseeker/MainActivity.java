@@ -6,6 +6,7 @@ import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 
+import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
@@ -19,10 +20,14 @@ import android.widget.ListView;
 import android.widget.SearchView;
 import android.widget.ArrayAdapter;
 
+import com.google.gson.Gson;
+
 import org.jgrapht.*;
 import org.jgrapht.alg.shortestpath.DijkstraShortestPath;
 import org.jgrapht.graph.*;
 import org.jgrapht.nio.json.JSONImporter;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,9 +40,9 @@ import java.util.Map;
 public class MainActivity extends AppCompatActivity {
 
     // Paths to files
-    public final String GRAPH_FILE = "sample_zoo_graph.json";
-    public final String NODE_INFO = "sample_node_info.json";
-    public final String EDGE_INFO = "sample_edge_info.json";
+    public String graph_file;
+    public String node_info_file;
+    public String edge_info_file;
 
     // ViewModel for database
     private LocationsDatabase db;
@@ -55,13 +60,23 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // Load zoo data files
+        try {
+            InputStream is = this.getAssets().open("zoo_data_files.json");
+            JSONObject zooDataFiles = DataFilesReader.inputStreamToJSONObject(is);
+            this.graph_file = zooDataFiles.getString("graph_file");
+            this.node_info_file = zooDataFiles.getString("vertex_file");
+            this.edge_info_file = zooDataFiles.getString("edge_file");
+        } catch (IOException | JSONException e) {
+            e.printStackTrace();
+        }
         // Load graph into app
-        Graph<String, IdentifiedWeightedEdge> zooGraph = ZooData.loadZooGraphJSON(this, GRAPH_FILE);
+        Graph<String, IdentifiedWeightedEdge> zooGraph = ZooData.loadZooGraphJSON(this, graph_file);
         // Load graph info
-        Map<String, ZooData.VertexInfo> vertexInfo = ZooData.loadVertexInfoJSON(this, NODE_INFO);
-        Map<String, ZooData.EdgeInfo> edgeInfo = ZooData.loadEdgeInfoJSON(this, EDGE_INFO);
+        Map<String, ZooData.VertexInfo> vertexInfo = ZooData.loadVertexInfoJSON(this, node_info_file);
+        Map<String, ZooData.EdgeInfo> edgeInfo = ZooData.loadEdgeInfoJSON(this, edge_info_file);
 
-        searchList = new ArrayList<String>();
+        searchList = new ArrayList<>();
         for (String location : vertexInfo.keySet()) {
             searchList.add(vertexInfo.get(location).name);
         }
@@ -71,7 +86,7 @@ public class MainActivity extends AppCompatActivity {
         db = LocationsDatabase.getSingleton(context);
         locationsListItemDao = db.locationsListItemDao();
 
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.select_dialog_item, searchList);
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.select_dialog_item, searchList);
         AutoCompleteTextView actv = (AutoCompleteTextView) findViewById(R.id.search_field);
         actv.setThreshold(1);
         actv.setAdapter(adapter);
@@ -90,7 +105,14 @@ public class MainActivity extends AppCompatActivity {
                                 return;
                             }
                         }
-                        viewModel.createLocation(query);
+                        // Find vertex id of query
+                        String vertexId = "";
+                        for (String key : vertexInfo.keySet()) {
+                            if (vertexInfo.get(key).name == query) {
+                                vertexId = key;
+                            }
+                        }
+                        viewModel.createLocation(query, vertexId);
                     }
                 }
         );
@@ -123,24 +145,9 @@ public class MainActivity extends AppCompatActivity {
 
     public void launchRoutePlan(View view) {
         Intent intent = new Intent(this, RouteActivity.class);
+        intent.putExtra("graph_file", this.graph_file);
+        intent.putExtra("vertex_file", this.node_info_file);
+        intent.putExtra("edge_file", this.edge_info_file);
         startActivity(intent);
-    }
-
-    public void calculateShortestPath(Graph<String, DefaultWeightedEdge> g) {
-        GraphPath<String, DefaultWeightedEdge> shortest_path = DijkstraShortestPath.findPathBetween(g, "entranceExitGate1", "arcticFoxViewpoint");
-        System.out.println("Shortest path from entranceExitGate1 to arcticFoxViewpoint: \n" + shortest_path.toString());
-    }
-
-    public static Graph<String, DefaultWeightedEdge> createGraphFromJSON(Context context, String path) throws IOException {
-        Graph<String, DefaultWeightedEdge> g = new SimpleWeightedGraph<>(DefaultWeightedEdge.class);
-
-        JSONImporter<String, DefaultWeightedEdge> jsonImporter = new JSONImporter<>();
-        jsonImporter.setVertexFactory(label -> label);
-
-        InputStream input = context.getAssets().open(path);
-        Reader reader = new InputStreamReader(input);
-        jsonImporter.importGraph(g, reader);
-
-        return g;
     }
 }

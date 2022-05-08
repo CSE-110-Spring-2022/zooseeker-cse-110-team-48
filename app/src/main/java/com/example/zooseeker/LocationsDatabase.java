@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
-@Database(entities={LocationsListItem.class}, version = 1)
+@Database(entities={LocationsListItem.class}, version = 3)
 public abstract class LocationsDatabase extends RoomDatabase {
     private static LocationsDatabase singleton = null;
 
@@ -35,7 +35,7 @@ public abstract class LocationsDatabase extends RoomDatabase {
     }
 
     private static LocationsDatabase makeDatabase(Context context) {
-        return Room.databaseBuilder(context, LocationsDatabase.class, "todo_app.db")
+        return Room.databaseBuilder(context, LocationsDatabase.class, "locations_app.db")
                 .allowMainThreadQueries()
                 .addCallback(new Callback() {
                     @Override
@@ -43,7 +43,7 @@ public abstract class LocationsDatabase extends RoomDatabase {
                         super.onCreate(db);
                         Executors.newSingleThreadScheduledExecutor().execute(() -> {
                             List<LocationsListItem> todos = LocationsListItem
-                                    .loadJSON(context, "sample_exhibits.json");
+                                    .loadJSON(context);
                             getSingleton(context).locationsListItemDao().insertAll(todos);
                         });
                     }
