@@ -40,8 +40,8 @@ public class LocationDatabaseTest {
 
     @Test
     public void testInsert() {
-        LocationsListItem item1 = new LocationsListItem("Pizza time", 2.0, 0);
-        LocationsListItem item2 = new LocationsListItem("Photos of Spider-Man", 2.0, 1);
+        LocationsListItem item1 = new LocationsListItem("Pizza time", "pizza", 2.0, 0);
+        LocationsListItem item2 = new LocationsListItem("Photos of Spider-Man", "spider", 2.0, 1);
 
         long id1 = dao.insert(item1);
         long id2 = dao.insert(item2);
@@ -51,7 +51,7 @@ public class LocationDatabaseTest {
 
     @Test
     public void testGet() {
-        LocationsListItem insertedItem = new LocationsListItem("Pizza time", 2.0, 0);
+        LocationsListItem insertedItem = new LocationsListItem("Pizza time", "pizza", 2.0, 0);
         long id = dao.insert(insertedItem);
 
         LocationsListItem item = dao.get(id);
@@ -61,7 +61,7 @@ public class LocationDatabaseTest {
     }
     @Test
     public void testUpdate() {
-        LocationsListItem item = new LocationsListItem("Pizza time", 2.0, 0);
+        LocationsListItem item = new LocationsListItem("Pizza time", "pizza", 2.0, 0);
         long id = dao.insert(item);
 
         item = dao.get(id);
@@ -76,7 +76,7 @@ public class LocationDatabaseTest {
 
     @Test
     public void testDelete() {
-        LocationsListItem item = new LocationsListItem("Pizza time", 2.0, 0);
+        LocationsListItem item = new LocationsListItem("Pizza time", "pizza", 2.0, 0);
         long id = dao.insert(item);
 
         item = dao.get(id);

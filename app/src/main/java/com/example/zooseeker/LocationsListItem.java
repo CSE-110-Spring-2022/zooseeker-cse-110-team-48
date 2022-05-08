@@ -11,6 +11,8 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
 import org.jgrapht.Graph;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -20,6 +22,7 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Entity(tableName = "locations_list_items")
@@ -28,35 +31,46 @@ public class LocationsListItem {
     public long id = 0;
     @NonNull
     public String text;
+    public String textId;
     public int order;
     public double distance;
 
-    LocationsListItem(@NonNull String text, double distance, int order) {
+    LocationsListItem(@NonNull String text, @NonNull String textId, double distance, int order) {
         this.text = text;
         this.distance = distance;
         this.order = order;
+        this.textId = textId;
     }
 
     @Override
     public String toString() {
         return "LocationsListItem{" +
                 "id=" + id +
-                ", text='" + text + '\'' +
+                ", text=" + text +
+                ", textId=" + textId +
                 ", order=" + order +
                 ", distance=" + distance +
                 '}';
     }
 
-    public static List<LocationsListItem> loadJSON(Context context, String path) {
-        Graph<String, IdentifiedWeightedEdge> graph =
-                ZooData.loadZooGraphJSON(context, path);
+    public static List<LocationsListItem> loadJSON(Context context) {
+        String zooDataJson = "";
+        InputStream is = null;
+        Graph<String, IdentifiedWeightedEdge> graph = null;
+        try {
+            is = context.getAssets().open("zoo_data_files.json");
+            JSONObject zooDataFiles = DataFilesReader.inputStreamToJSONObject(is);
+            graph = ZooData.loadZooGraphJSON(context, zooDataFiles.getString("graph_file"));
+        } catch (IOException | JSONException e) {
+            e.printStackTrace();
+        }
 
-        List<LocationsListItem> vertexList = new ArrayList<LocationsListItem>();
+        List<LocationsListItem> vertexList = new ArrayList<>();
         Set<String> graphVertices = graph.vertexSet();
         int order = 1;
 
         for (String vertex : graphVertices) {
-            LocationsListItem item = new LocationsListItem(vertex, 0, order++);
+            LocationsListItem item = new LocationsListItem(vertex, "", 0, order++);
             vertexList.add(item);
             Log.d("Added Vertex", vertex);
         }
