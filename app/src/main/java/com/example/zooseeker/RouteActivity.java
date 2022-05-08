@@ -73,6 +73,8 @@ public class RouteActivity extends AppCompatActivity {
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(adapter);
 
+        locationsListItemDao.deleteAll();
+
         for(LocationsListItem location : exhibitsToVisit){
             viewModel.createLocation(location.text,location.textId);
         }

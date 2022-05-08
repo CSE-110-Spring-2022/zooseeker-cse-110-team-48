@@ -26,6 +26,9 @@ public interface LocationsListItemDao {
     @Query("SELECT * from `locations_list_items` ORDER BY `order`")
     LiveData<List<LocationsListItem>> getAllLive();
 
+    @Query("DELETE from `locations_list_items`")
+    void deleteAll();
+
     @Update
     int update(LocationsListItem locationsListItem);
 
@@ -34,4 +37,7 @@ public interface LocationsListItemDao {
 
     @Query("SELECT `order` + 1 FROM `locations_list_items` ORDER BY `order` DESC LIMIT 1")
     int getOrderForAppend();
+
+    @Query("SELECT COUNT(*) FROM `locations_list_items`")
+    int getDataCount();
 }

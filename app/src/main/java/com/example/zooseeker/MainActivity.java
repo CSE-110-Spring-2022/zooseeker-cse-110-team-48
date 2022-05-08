@@ -92,7 +92,9 @@ public class MainActivity extends AppCompatActivity {
         actv.setAdapter(adapter);
 
         Button planningListButton = findViewById(R.id.view_list_btn);
-        Button planRouteButton = findViewById(R.id.plan_route_btn);
+        updateListCount();
+
+
 
         actv.setOnItemClickListener(
                 new AdapterView.OnItemClickListener() {
@@ -102,6 +104,7 @@ public class MainActivity extends AppCompatActivity {
                         String query = adapter.getItem(position).toString();
                         for (LocationsListItem location : curr_db) {
                             if (location.text.equals(query)) {
+                                updateListCount();
                                 return;
                             }
                         }
@@ -113,6 +116,7 @@ public class MainActivity extends AppCompatActivity {
                             }
                         }
                         viewModel.createLocation(query, vertexId);
+                        updateListCount();
                     }
                 }
         );
@@ -125,13 +129,6 @@ public class MainActivity extends AppCompatActivity {
                 }
         );
 
-        planRouteButton.setOnClickListener(
-                new View.OnClickListener() {
-                    public void onClick(View v) {
-                        launchRoutePlan(v);
-                    }
-                }
-        );
     }
 
     /**
@@ -140,14 +137,22 @@ public class MainActivity extends AppCompatActivity {
      */
     public void launchPlanningList(View view) {
         Intent intent = new Intent(this, LocationsListActivity.class);
+        intent.putExtra("graph_file", this.graph_file);
+        intent.putExtra("node_info_file", this.node_info_file);
+        intent.putExtra("edge_info_file", this.edge_info_file);
         startActivity(intent);
     }
 
-    public void launchRoutePlan(View view) {
-        Intent intent = new Intent(this, RouteActivity.class);
-        intent.putExtra("graph_file", this.graph_file);
-        intent.putExtra("vertex_file", this.node_info_file);
-        intent.putExtra("edge_file", this.edge_info_file);
-        startActivity(intent);
+    public void onResume() {
+        super.onResume();
+        updateListCount();
+    }
+    public void updateListCount(){
+        Context context = getApplication().getApplicationContext();
+        db = LocationsDatabase.getSingleton(context);
+        locationsListItemDao = db.locationsListItemDao();
+
+        Button planningListButton = findViewById(R.id.view_list_btn);
+        planningListButton.setText("View Planning List (" + locationsListItemDao.getDataCount() + ")");
     }
 }

@@ -3,6 +3,7 @@ package com.example.zooseeker;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -57,12 +58,15 @@ public class LocationsListAdapter extends RecyclerView.Adapter<LocationsListAdap
         private final TextView distanceView;
         private LocationsListItem locationItem;
         private final TextView delete;
+        private final Button planningBtn;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             this.textView = itemView.findViewById(R.id.location_item_text);
             this.distanceView = itemView.findViewById(R.id.distance_text);
             this.delete = itemView.findViewById(R.id.delete_btn);
+            this.planningBtn = itemView.findViewById(R.id.view_list_btn);
+
 
             this.delete.setOnClickListener(view -> {
                 if (onDeleteClicked == null) return;

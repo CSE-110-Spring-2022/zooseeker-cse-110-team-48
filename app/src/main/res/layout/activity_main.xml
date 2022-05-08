@@ -10,11 +10,11 @@
         android:id="@+id/view_list_btn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="108dp"
-        android:layout_marginBottom="92dp"
+        android:layout_marginBottom="16dp"
         android:gravity="center"
-        android:text="View Planning List"
+        android:text="View Planning List (0)"
         app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
     <AutoCompleteTextView
@@ -35,12 +35,4 @@
         app:layout_constraintTop_toTopOf="parent"
         tools:ignore="SpeakableTextPresentCheck" />
 
-    <Button
-        android:id="@+id/plan_route_btn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="160dp"
-        android:text="Plan"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/view_list_btn" />
 </androidx.constraintlayout.widget.ConstraintLayout>
