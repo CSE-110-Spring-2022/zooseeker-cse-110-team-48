@@ -28,6 +28,7 @@
         android:hint="Type a zoo location"
         android:singleLine="true"
         android:inputType="textAutoComplete"
+        android:imeOptions="actionDone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="1.0"
         app:layout_constraintStart_toStartOf="parent"
@@ -39,8 +40,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="160dp"
-        android:layout_marginTop="584dp"
         android:text="Plan"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/search_field" />
+        app:layout_constraintTop_toBottomOf="@+id/view_list_btn" />
 </androidx.constraintlayout.widget.ConstraintLayout>
