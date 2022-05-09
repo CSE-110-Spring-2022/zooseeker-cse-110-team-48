@@ -6,6 +6,11 @@ import android.app.AlertDialog;
 import java.util.Optional;
 
 public class SearchUtilities {
+    /**
+     * This method shows an alert pop-up for an activity, when an error occurs
+     * @param activity - parent activity of pop-up
+     * @param message - message to display
+     */
     public static void showSearchError(Activity activity, String message) {
         AlertDialog.Builder alertBuilder = new AlertDialog.Builder(activity);
 

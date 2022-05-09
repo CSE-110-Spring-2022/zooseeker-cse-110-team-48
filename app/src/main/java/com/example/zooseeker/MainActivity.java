@@ -76,11 +76,13 @@ public class MainActivity extends AppCompatActivity {
         Map<String, ZooData.VertexInfo> vertexInfo = ZooData.loadVertexInfoJSON(this, node_info_file);
         Map<String, ZooData.EdgeInfo> edgeInfo = ZooData.loadEdgeInfoJSON(this, edge_info_file);
 
+        // Generate search list for search bar
         searchList = new ArrayList<>();
         for (String location : vertexInfo.keySet()) {
             searchList.add(vertexInfo.get(location).name);
         }
 
+        // Get view model to access database through searchbar
         this.viewModel = new ViewModelProvider(this).get(LocationsListViewModel.class);
         Context context = getApplication().getApplicationContext();
         db = LocationsDatabase.getSingleton(context);
@@ -100,6 +102,8 @@ public class MainActivity extends AppCompatActivity {
                     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                         List<LocationsListItem> curr_db = locationsListItemDao.getAll();
                         String query = adapter.getItem(position).toString();
+
+                        // Update the number of exhibits display in UI
                         for (LocationsListItem location : curr_db) {
                             if (location.text.equals(query)) {
                                 updateListCount();
@@ -114,6 +118,7 @@ public class MainActivity extends AppCompatActivity {
                                 vertexId = key;
                             }
                         }
+                        // Add database entry for added exhibit
                         viewModel.createLocation(query, vertexId, 0);
                         updateListCount();
                         actv.setText("");
@@ -121,6 +126,7 @@ public class MainActivity extends AppCompatActivity {
                 }
         );
 
+        // Launches the planning list
         planningListButton.setOnClickListener(
                 new View.OnClickListener() {
                     public void onClick(View v) {
@@ -147,6 +153,10 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
         updateListCount();
     }
+
+    /**
+     * Updates the list displayed on the planning list button
+     */
     public void updateListCount(){
         Context context = getApplication().getApplicationContext();
         db = LocationsDatabase.getSingleton(context);
