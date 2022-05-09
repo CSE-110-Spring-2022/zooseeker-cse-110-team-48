@@ -14,6 +14,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.function.Consumer;
 
+/**
+ * Adapter for RecyclerView to interact with the database of locations
+ */
 public class LocationsListAdapter extends RecyclerView.Adapter<LocationsListAdapter.ViewHolder>{
     private List<LocationsListItem> locationItems = Collections.emptyList();
     private Consumer<LocationsListItem> onDeleteClicked;
@@ -53,6 +56,9 @@ public class LocationsListAdapter extends RecyclerView.Adapter<LocationsListAdap
         return locationItems.get(position).id;
     }
 
+    /**
+     * ViewHolder for entries in the locations list
+     */
     public class ViewHolder extends RecyclerView.ViewHolder {
         private final TextView textView;
         private final TextView distanceView;
