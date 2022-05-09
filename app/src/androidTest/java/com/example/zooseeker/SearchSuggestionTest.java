@@ -6,6 +6,9 @@ import static androidx.test.espresso.action.ViewActions.click;
 import static androidx.test.espresso.action.ViewActions.closeSoftKeyboard;
 import static androidx.test.espresso.action.ViewActions.pressImeActionButton;
 import static androidx.test.espresso.action.ViewActions.replaceText;
+import static androidx.test.espresso.action.ViewActions.typeText;
+import static androidx.test.espresso.assertion.ViewAssertions.doesNotExist;
+import static androidx.test.espresso.assertion.ViewAssertions.matches;
 import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
@@ -33,10 +36,11 @@ import org.junit.runner.RunWith;
 public class SearchSuggestionTest {
 
     @Rule
-    public ActivityTestRule<MainActivity> mActivityTestRule = new ActivityTestRule<>(MainActivity.class);
+    public ActivityTestRule<MainActivity> mActivityTestRule = new ActivityTestRule<>(MainActivity
+            .class);
 
     @Test
-    public void searchSuggestionTest() {
+    public void searchNonExistentExhibitTest() {
         ViewInteraction materialAutoCompleteTextView = onView(
                 allOf(withId(R.id.search_field),
                         childAtPosition(
@@ -45,7 +49,7 @@ public class SearchSuggestionTest {
                                         0),
                                 1),
                         isDisplayed()));
-        materialAutoCompleteTextView.perform(replaceText("Bir"), closeSoftKeyboard());
+        materialAutoCompleteTextView.perform(typeText("Bir"), closeSoftKeyboard());
 
         ViewInteraction materialAutoCompleteTextView2 = onView(
                 allOf(withId(R.id.search_field), withText("Bir"),
@@ -57,12 +61,31 @@ public class SearchSuggestionTest {
                         isDisplayed()));
         materialAutoCompleteTextView2.perform(pressImeActionButton());
 
-        onView(withText("Bird"))
-                .inRoot(RootMatchers.isPlatformPopup())
-                .perform(click());
-
-
+//        onView(withText("Bird"))
+//                .inRoot(RootMatchers.isPlatformPopup())
+//                .perform(click());
     }
+
+    @Test
+    public void searchNonExistentExhibitTest2() {
+        ViewInteraction materialAutoCompleteTextView = onView(allOf(withId(R.id.search_field),
+                isDisplayed()));
+        materialAutoCompleteTextView.perform(typeText("dog"), closeSoftKeyboard());
+        ViewInteraction autoCompleteTextView = onView(allOf(withId(R.id.search_field), withText
+                ("Hot Dogs"), isDisplayed()));
+        autoCompleteTextView.check(doesNotExist());
+    }
+
+    @Test
+    public void searchExistentExhibitTest() {
+        ViewInteraction materialAutoCompleteTextView = onView(allOf(withId(R.id.search_field),
+                isDisplayed()));
+        materialAutoCompleteTextView.perform(typeText("fox"), closeSoftKeyboard());
+        ViewInteraction autoCompleteTextView = onView(allOf(withId(R.id.search_field), withText
+                ("fox"), isDisplayed()));
+        autoCompleteTextView.check(matches(isDisplayed()));
+    }
+
 
     private static Matcher<View> childAtPosition(
             final Matcher<View> parentMatcher, final int position) {
