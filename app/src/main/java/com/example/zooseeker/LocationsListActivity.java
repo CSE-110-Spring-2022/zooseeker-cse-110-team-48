@@ -23,6 +23,7 @@ public class LocationsListActivity extends AppCompatActivity {
     public RecyclerView recyclerView;
     private LocationsListViewModel viewModel;
     private ArrayList<String> directions;
+    LocationsListItemDao locationsListItemDao;
     // Paths to files
     public String graph_file;
     public String node_info_file;
@@ -75,7 +76,7 @@ public class LocationsListActivity extends AppCompatActivity {
 
     private void updateDirections() {
         LocationsDatabase db = LocationsDatabase.getSingleton(this);
-        LocationsListItemDao locationsListItemDao = db.locationsListItemDao();
+        locationsListItemDao = db.locationsListItemDao();
 
         List<LocationsListItem> exhibitsToVisit = locationsListItemDao.getAll();
         ArrayList<String> targets = new ArrayList<String>();
@@ -108,10 +109,14 @@ public class LocationsListActivity extends AppCompatActivity {
     }
 
     public void launchRoutePlan(View view) {
-        updateDirections();
-        Intent intent = new Intent(this, RouteActivity.class);
-        intent.putExtra("directions_list", this.directions);
-        startActivity(intent);
+        if(locationsListItemDao.getDataCount() == 0){
+            Utilities.showAlert(this, "Add at least one exhibit to your route!");
+        }else {
+            updateDirections();
+            Intent intent = new Intent(this, RouteActivity.class);
+            intent.putExtra("directions_list", this.directions);
+            startActivity(intent);
+        }
     }
 
 

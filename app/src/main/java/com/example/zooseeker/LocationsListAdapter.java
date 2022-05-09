@@ -80,7 +80,7 @@ public class LocationsListAdapter extends RecyclerView.Adapter<LocationsListAdap
         public void setLocationItem(LocationsListItem locationItem) {
             this.locationItem = locationItem;
             this.textView.setText(locationItem.text);
-            this.distanceView.setText(String.format(Locale.getDefault(), "%f", locationItem.distance));
+            this.distanceView.setText(String.format(Locale.getDefault(), "%.1f", locationItem.distance));
         }
     }
 
