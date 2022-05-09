@@ -103,6 +103,7 @@ public class MainActivity extends AppCompatActivity {
                         for (LocationsListItem location : curr_db) {
                             if (location.text.equals(query)) {
                                 updateListCount();
+                                actv.setText("");
                                 return;
                             }
                         }
@@ -115,6 +116,7 @@ public class MainActivity extends AppCompatActivity {
                         }
                         viewModel.createLocation(query, vertexId, 0);
                         updateListCount();
+                        actv.setText("");
                     }
                 }
         );

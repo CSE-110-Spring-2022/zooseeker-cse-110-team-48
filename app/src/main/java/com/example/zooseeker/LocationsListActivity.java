@@ -22,11 +22,16 @@ import java.util.Map;
 public class LocationsListActivity extends AppCompatActivity {
     public RecyclerView recyclerView;
     private LocationsListViewModel viewModel;
-
+    private ArrayList<String> directions;
     // Paths to files
     public String graph_file;
     public String node_info_file;
     public String edge_info_file;
+
+    //
+    private Graph<String, IdentifiedWeightedEdge> zooGraph;
+    private Map<String, ZooData.VertexInfo> vertexInfo;
+    private Map<String, ZooData.EdgeInfo> edgeInfo;
 
     List<String> exhibitsInPlan;
     GraphRoute route;
@@ -61,10 +66,14 @@ public class LocationsListActivity extends AppCompatActivity {
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(adapter);
 
-        Graph<String, IdentifiedWeightedEdge> zooGraph = ZooData.loadZooGraphJSON(this, graph_file);
-        Map<String, ZooData.VertexInfo> vertexInfo = ZooData.loadVertexInfoJSON(this, node_info_file);
-        Map<String, ZooData.EdgeInfo> edgeInfo = ZooData.loadEdgeInfoJSON(this, edge_info_file);
+        this.zooGraph = ZooData.loadZooGraphJSON(this, graph_file);
+        this.vertexInfo = ZooData.loadVertexInfoJSON(this, node_info_file);
+        this.edgeInfo = ZooData.loadEdgeInfoJSON(this, edge_info_file);
 
+        updateDirections();
+    }
+
+    private void updateDirections() {
         LocationsDatabase db = LocationsDatabase.getSingleton(this);
         LocationsListItemDao locationsListItemDao = db.locationsListItemDao();
 
@@ -92,14 +101,16 @@ public class LocationsListActivity extends AppCompatActivity {
             viewModel.createLocation(properName, location, distance);
         }
 
-    }
-    public void launchRoutePlan(View view) {
-        Intent intent = new Intent(this, RouteActivity.class);
-        ArrayList<String> directions = new ArrayList<>();
+        this.directions = new ArrayList<>();
         while (!this.route.reachedEnd()) {
-            directions.add(GraphRoute.condenseDirectionsList(route.advanceToNextExhibit()));
+            this.directions.add(GraphRoute.condenseDirectionsList(route.advanceToNextExhibit()));
         }
-        intent.putExtra("directions_list", directions);
+    }
+
+    public void launchRoutePlan(View view) {
+        updateDirections();
+        Intent intent = new Intent(this, RouteActivity.class);
+        intent.putExtra("directions_list", this.directions);
         startActivity(intent);
     }
 
