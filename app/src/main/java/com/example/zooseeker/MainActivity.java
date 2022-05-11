@@ -1,58 +1,29 @@
 package com.example.zooseeker;
 
-//IMPORTANT: make sure to add your package name here (example -> package com.example.jgraphsample;)
-
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.lifecycle.ViewModelProvider;
 
-import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.Adapter;
 import android.widget.AdapterView;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
-import android.widget.ListView;
-import android.widget.SearchView;
 import android.widget.ArrayAdapter;
 
-import com.google.gson.Gson;
-
-import org.jgrapht.*;
-import org.jgrapht.alg.shortestpath.DijkstraShortestPath;
-import org.jgrapht.graph.*;
-import org.jgrapht.nio.json.JSONImporter;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
 
-    // Paths to files
-    public String graph_file;
-    public String node_info_file;
-    public String edge_info_file;
+    // Path to json file containing assets to load
+    public final String ASSETS_LIST_FILE = "zoo_data_files.json";
 
-    // ViewModel for database
+    // Databasing objects
     private LocationsDatabase db;
-    private LocationsListViewModel viewModel;
     private LocationsListItemDao locationsListItemDao;
-
-    // Search domain
-    protected ArrayList<String> searchList;
-    private ArrayAdapter<String> arrayAdapter;
-    private ListView suggestions;
 
     @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
@@ -60,68 +31,49 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Load zoo data files
-        try {
-            InputStream is = this.getAssets().open("zoo_data_files.json");
-            JSONObject zooDataFiles = DataFilesReader.inputStreamToJSONObject(is);
-            this.graph_file = zooDataFiles.getString("graph_file");
-            this.node_info_file = zooDataFiles.getString("vertex_file");
-            this.edge_info_file = zooDataFiles.getString("edge_file");
-        } catch (IOException | JSONException e) {
-            e.printStackTrace();
-        }
-        // Load graph into app
-        Graph<String, IdentifiedWeightedEdge> zooGraph = ZooData.loadZooGraphJSON(this, graph_file);
-        // Load graph info
-        Map<String, ZooData.VertexInfo> vertexInfo = ZooData.loadVertexInfoJSON(this, node_info_file);
-        Map<String, ZooData.EdgeInfo> edgeInfo = ZooData.loadEdgeInfoJSON(this, edge_info_file);
+        // Get graph vertices
+        DataFilesReader graphReader = new DataFilesReader(this, ASSETS_LIST_FILE);
+        Map<String, ZooData.VertexInfo> vertexSet = graphReader.getVertexInfo();
+        Map<String, ZooData.VertexInfo> vertexInfo = vertexSet;
 
-        // Generate search list for search bar
-        searchList = new ArrayList<>();
-        for (String location : vertexInfo.keySet()) {
-            searchList.add(vertexInfo.get(location).name);
-        }
+        // Get exhibits list
+        List<Exhibit> exhibitList = Exhibit.returnExhibits(vertexInfo);
 
-        // Get view model to access database through searchbar
-        this.viewModel = new ViewModelProvider(this).get(LocationsListViewModel.class);
+        // Instantiate AutoCompleteTextView using custom exhibit adapter
+        ArrayAdapter<Exhibit> exhibitSearchAdapter = new ExhibitSearchAdapter(
+                this, android.R.layout.select_dialog_item, exhibitList);
+        AutoCompleteTextView searchView = (AutoCompleteTextView) findViewById(R.id.search_field);
+        searchView.setThreshold(1);
+        searchView.setAdapter(exhibitSearchAdapter);
+
+        // Instantiate database objects
         Context context = getApplication().getApplicationContext();
-        db = LocationsDatabase.getSingleton(context);
-        locationsListItemDao = db.locationsListItemDao();
+        this.db = LocationsDatabase.getSingleton(context);
+        this.locationsListItemDao = db.locationsListItemDao();
 
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.select_dialog_item, searchList);
-        AutoCompleteTextView actv = (AutoCompleteTextView) findViewById(R.id.search_field);
-        actv.setThreshold(1);
-        actv.setAdapter(adapter);
-
+        // Instantiate button to view planning list
         Button planningListButton = findViewById(R.id.view_list_btn);
         updateListCount();
 
-        actv.setOnItemClickListener(
+        // Triggered upon selecting suggested item from search list
+        searchView.setOnItemClickListener(
                 new AdapterView.OnItemClickListener() {
                     @Override
                     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                        List<LocationsListItem> curr_db = locationsListItemDao.getAll();
-                        String query = adapter.getItem(position).toString();
+                        // Extract necessary exhibit info to construct database item
+                        String queryId = exhibitSearchAdapter.getItem(position).id;
+                        String queryName = exhibitSearchAdapter.getItem(position).name;
 
-                        // Update the number of exhibits display in UI
-                        for (LocationsListItem location : curr_db) {
-                            if (location.text.equals(query)) {
-                                updateListCount();
-                                actv.setText("");
-                                return;
-                            }
+                        // Add database entry for added exhibit, if not already in database
+                        if (locationsListItemDao.get(queryId) == null) {
+                            int endOfListOrder = locationsListItemDao.getOrderForAppend();
+                            LocationsListItem newItem = new LocationsListItem(queryName, queryId, 0, endOfListOrder);
+                            locationsListItemDao.insert(newItem);
                         }
-                        // Find vertex id of query
-                        String vertexId = "";
-                        for (String key : vertexInfo.keySet()) {
-                            if (vertexInfo.get(key).name == query) {
-                                vertexId = key;
-                            }
-                        }
-                        // Add database entry for added exhibit
-                        viewModel.createLocation(query, vertexId, 0);
+
+                        // Update UI elements
                         updateListCount();
-                        actv.setText("");
+                        searchView.setText("");
                     }
                 }
         );
@@ -143,9 +95,7 @@ public class MainActivity extends AppCompatActivity {
      */
     public void launchPlanningList(View view) {
         Intent intent = new Intent(this, LocationsListActivity.class);
-        intent.putExtra("graph_file", this.graph_file);
-        intent.putExtra("node_info_file", this.node_info_file);
-        intent.putExtra("edge_info_file", this.edge_info_file);
+        intent.putExtra("assets_list_file", ASSETS_LIST_FILE); // Pass assets file paths
         startActivity(intent);
     }
 

@@ -27,10 +27,6 @@ public class LocationsListActivity extends AppCompatActivity {
     private LocationsListViewModel viewModel;
     private ArrayList<String> directions;
     LocationsListItemDao locationsListItemDao;
-    // Paths to files
-    public String graph_file;
-    public String node_info_file;
-    public String edge_info_file;
 
     // Objects containing info of graphs
     private Graph<String, IdentifiedWeightedEdge> zooGraph;
@@ -39,6 +35,7 @@ public class LocationsListActivity extends AppCompatActivity {
 
     List<String> exhibitsInPlan;
     GraphRoute route;
+    String startVertex;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,11 +43,14 @@ public class LocationsListActivity extends AppCompatActivity {
         setContentView(R.layout.activity_locations_list);
         Intent intent = getIntent();
 
-        // Get filepaths to graph assets
-        this.graph_file = intent.getExtras().getString("graph_file");
-        this.node_info_file = intent.getExtras().getString("node_info_file");
-        this.edge_info_file = intent.getExtras().getString("edge_info_file");
+        // Get zoo graph objects
+        DataFilesReader graphReader = new DataFilesReader(this, intent.getExtras().getString("assets_list_file"));
+        this.zooGraph = graphReader.getGraph();
+        this.vertexInfo = graphReader.getVertexInfo();
+        this.edgeInfo = graphReader.getEdgeInfo();
+        this.startVertex = graphReader.getGateId();
 
+        // Initialize view model for plan list
         LocationsListViewModel viewModel = new ViewModelProvider(this).get(LocationsListViewModel.class);
         this.viewModel = viewModel;
 
@@ -75,19 +75,16 @@ public class LocationsListActivity extends AppCompatActivity {
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(adapter);
 
-        this.zooGraph = ZooData.loadZooGraphJSON(this, graph_file);
-        this.vertexInfo = ZooData.loadVertexInfoJSON(this, node_info_file);
-        this.edgeInfo = ZooData.loadEdgeInfoJSON(this, edge_info_file);
-
-        updateDirections();
+        updateDirections(startVertex);
     }
 
     /**
      * This method creates a GraphRoute using the locations in the database. The GraphRoute object
      *  handles directions generation, creating an ArrayList of directions to pass to the directions
      *  Activity.
+     * @param startVertex - ID of starting vertex of route
      */
-    private void updateDirections() {
+    private void updateDirections(String startVertex) {
         // Get database instance
         LocationsDatabase db = LocationsDatabase.getSingleton(this);
         locationsListItemDao = db.locationsListItemDao();
@@ -100,7 +97,7 @@ public class LocationsListActivity extends AppCompatActivity {
         }
 
         // Construct route (TSP heuristic), and retrieve major vertices in route planned
-        this.route = new GraphRoute(zooGraph, vertexInfo, edgeInfo, targets, "entrance_exit_gate");
+        this.route = new GraphRoute(zooGraph, vertexInfo, edgeInfo, targets, startVertex);
         this.exhibitsInPlan = route.exhibitsInOrder();
 
         // We want to delete all locations and re-add them in proper order to the database
@@ -138,7 +135,7 @@ public class LocationsListActivity extends AppCompatActivity {
         if(locationsListItemDao.getDataCount() == 0){
             Utilities.showAlert(this, "Add at least one exhibit to your route!");
         }else {
-            updateDirections();
+            updateDirections(startVertex);
             Intent intent = new Intent(this, RouteActivity.class);
             intent.putExtra("directions_list", this.directions);
             startActivity(intent);
