@@ -52,28 +52,4 @@ public class LocationsListItem {
                 ", distance=" + distance +
                 '}';
     }
-
-    public static List<LocationsListItem> loadJSON(Context context) {
-        String zooDataJson = "";
-        InputStream is = null;
-        Graph<String, IdentifiedWeightedEdge> graph = null;
-        try {
-            is = context.getAssets().open("zoo_data_files.json");
-            JSONObject zooDataFiles = DataFilesReader.inputStreamToJSONObject(is);
-            graph = ZooData.loadZooGraphJSON(context, zooDataFiles.getString("graph_file"));
-        } catch (IOException | JSONException e) {
-            e.printStackTrace();
-        }
-
-        List<LocationsListItem> vertexList = new ArrayList<>();
-        Set<String> graphVertices = graph.vertexSet();
-        int order = 1;
-
-        for (String vertex : graphVertices) {
-            LocationsListItem item = new LocationsListItem(vertex, "", 0, order++);
-            vertexList.add(item);
-            Log.d("Added Vertex", vertex);
-        }
-        return vertexList;
-    }
 }

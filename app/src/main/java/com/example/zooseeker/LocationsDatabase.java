@@ -37,17 +37,6 @@ public abstract class LocationsDatabase extends RoomDatabase {
     private static LocationsDatabase makeDatabase(Context context) {
         return Room.databaseBuilder(context, LocationsDatabase.class, "locations_app.db")
                 .allowMainThreadQueries()
-                .addCallback(new Callback() {
-                    @Override
-                    public void onCreate(@NonNull SupportSQLiteDatabase db) {
-                        super.onCreate(db);
-                        Executors.newSingleThreadScheduledExecutor().execute(() -> {
-                            List<LocationsListItem> todos = LocationsListItem
-                                    .loadJSON(context);
-                            getSingleton(context).locationsListItemDao().insertAll(todos);
-                        });
-                    }
-                })
                 .build();
     }
 }
