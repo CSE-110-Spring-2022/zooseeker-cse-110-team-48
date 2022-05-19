@@ -31,6 +31,8 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        UserLocationTracker tracker = new UserLocationTracker(this);
+
         // Get graph vertices
         DataFilesReader graphReader = new DataFilesReader(this, ASSETS_LIST_FILE);
         Map<String, ZooData.VertexInfo> vertexSet = graphReader.getVertexInfo();
