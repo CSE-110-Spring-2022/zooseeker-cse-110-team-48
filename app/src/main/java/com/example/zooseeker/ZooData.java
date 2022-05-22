@@ -22,7 +22,7 @@ import org.jgrapht.nio.json.JSONImporter;
 
 public class ZooData {
     public static class VertexInfo {
-        public static enum Kind {
+        public enum Kind {
             // The SerializedName annotation tells GSON how to convert
             // from the strings in our JSON to this Enum.
             @SerializedName("gate") GATE,
@@ -34,6 +34,8 @@ public class ZooData {
         public Kind kind;
         public String name;
         public List<String> tags;
+        public float lat;
+        public float lng;
     }
 
     public static class EdgeInfo {
@@ -64,11 +66,8 @@ public class ZooData {
             //   indexedZooData[datum.id] = datum;
             // }
             //
-            Map<String, ZooData.VertexInfo> indexedZooData = zooData
-                    .stream()
-                    .collect(Collectors.toMap(v -> v.id, datum -> datum));
 
-            return indexedZooData;
+            return zooData.stream().collect(Collectors.toMap(v -> v.id, datum -> datum));
         } catch (IOException e) {
             e.printStackTrace();
             return null;
@@ -90,11 +89,7 @@ public class ZooData {
             Type type = new TypeToken<List<ZooData.EdgeInfo>>(){}.getType();
             List<ZooData.EdgeInfo> zooData = gson.fromJson(reader, type);
 
-            Map<String, ZooData.EdgeInfo> indexedZooData = zooData
-                    .stream()
-                    .collect(Collectors.toMap(v -> v.id, datum -> datum));
-
-            return indexedZooData;
+            return zooData.stream().collect(Collectors.toMap(v -> v.id, datum -> datum));
         } catch (IOException e) {
             e.printStackTrace();
             return null;

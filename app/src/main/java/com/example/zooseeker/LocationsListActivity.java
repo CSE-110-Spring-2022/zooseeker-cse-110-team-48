@@ -23,6 +23,7 @@ import java.util.Map;
  * Activity for the list of locations to visit, called from MainActivity
  */
 public class LocationsListActivity extends AppCompatActivity {
+    public static final String GRAPH_ROUTE_KEY = "route";
     public RecyclerView recyclerView;
     private LocationsListViewModel viewModel;
     private ArrayList<String> directions;
@@ -91,7 +92,7 @@ public class LocationsListActivity extends AppCompatActivity {
 
         // Get exhibits to visit
         List<LocationsListItem> exhibitsToVisit = locationsListItemDao.getAll();
-        ArrayList<String> targets = new ArrayList<String>();
+        ArrayList<String> targets = new ArrayList<>();
         for (LocationsListItem element : exhibitsToVisit) {
             targets.add(element.textId);
         }
