@@ -17,6 +17,7 @@ public class RouteActivity extends AppCompatActivity implements UserLocationTrac
     List<String> exhibitsInPlan;
     int directionsIndex;
     private TextView directionView;
+    warningUtilities wn;
 
     private ArrayList<String> directions;
     private UpdatedGraphRoute route;
@@ -58,6 +59,20 @@ public class RouteActivity extends AppCompatActivity implements UserLocationTrac
                     }
                 }
         );
+        
+        // Previous direction
+        wn = new warningUtilities();
+        Button prevButton = findViewById(R.id.prev_route_button);
+        prevButton.setOnClickListener(v -> {
+            // Back to the previous exhibit, or give warning if user's at ini.
+            if (directionsIndex > 1) {
+                directionsIndex--;
+                String result = directions.get(directionsIndex-1);
+                updateDirection(result);
+            } else {
+                wn.showError(this, "there is no previous exhibit");
+            }
+        });
     }
 
     private void updateDirection(String result) {
