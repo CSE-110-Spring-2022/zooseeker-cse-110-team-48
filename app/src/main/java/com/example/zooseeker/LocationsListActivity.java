@@ -7,15 +7,18 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Context;
 import android.content.Intent;
+import android.location.Location;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 
 import org.jgrapht.Graph;
+import org.jgrapht.graph.AbstractBaseGraph;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -30,12 +33,12 @@ public class LocationsListActivity extends AppCompatActivity {
     LocationsListItemDao locationsListItemDao;
 
     // Objects containing info of graphs
-    private Graph<String, IdentifiedWeightedEdge> zooGraph;
-    private Map<String, ZooData.VertexInfo> vertexInfo;
-    private Map<String, ZooData.EdgeInfo> edgeInfo;
+    private AbstractBaseGraph<String, IdentifiedWeightedEdge> zooGraph;
+    private HashMap<String, ZooData.VertexInfo> vertexInfo;
+    private HashMap<String, ZooData.EdgeInfo> edgeInfo;
 
     List<String> exhibitsInPlan;
-    GraphRoute route;
+    UpdatedGraphRoute route;
     String startVertex;
 
     @Override
@@ -44,12 +47,20 @@ public class LocationsListActivity extends AppCompatActivity {
         setContentView(R.layout.activity_locations_list);
         Intent intent = getIntent();
 
+        UserLocationTracker tracker = new UserLocationTracker(this);
+
         // Get zoo graph objects
         DataFilesReader graphReader = new DataFilesReader(this, intent.getExtras().getString("assets_list_file"));
-        this.zooGraph = graphReader.getGraph();
-        this.vertexInfo = graphReader.getVertexInfo();
-        this.edgeInfo = graphReader.getEdgeInfo();
-        this.startVertex = graphReader.getGateId();
+        this.zooGraph = (AbstractBaseGraph<String, IdentifiedWeightedEdge>) graphReader.getGraph();
+        this.vertexInfo = (HashMap<String, ZooData.VertexInfo>) graphReader.getVertexInfo();
+        this.edgeInfo = (HashMap<String, ZooData.EdgeInfo>) graphReader.getEdgeInfo();
+
+        Location userLocation = tracker.getUserLocation();
+        if (userLocation != null) {
+            this.startVertex = UserLocationTracker.nearestExhibit(userLocation, vertexInfo);
+        } else {
+            this.startVertex = graphReader.getGateId();
+        }
 
         // Initialize view model for plan list
         LocationsListViewModel viewModel = new ViewModelProvider(this).get(LocationsListViewModel.class);
@@ -98,7 +109,8 @@ public class LocationsListActivity extends AppCompatActivity {
         }
 
         // Construct route (TSP heuristic), and retrieve major vertices in route planned
-        this.route = new GraphRoute(zooGraph, vertexInfo, edgeInfo, targets, startVertex);
+        //this.route = new GraphRoute(zooGraph, vertexInfo, edgeInfo, targets, startVertex);
+        this.route = new UpdatedGraphRoute(zooGraph, vertexInfo, edgeInfo, targets, startVertex);
         this.exhibitsInPlan = route.exhibitsInOrder();
 
         // We want to delete all locations and re-add them in proper order to the database
@@ -124,7 +136,7 @@ public class LocationsListActivity extends AppCompatActivity {
         // Generate directions if there are exhibits to generate directions to.
         if (locationsListItemDao.getDataCount() > 0) {
             while (!this.route.reachedEnd()) {
-                this.directions.add(GraphRoute.condenseDirectionsList(route.advanceToNextExhibit()));
+                this.directions.add(UpdatedGraphRoute.condenseDirectionsList(route.advanceToNextExhibit()));
             }
         }
     }

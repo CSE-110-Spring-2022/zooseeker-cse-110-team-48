@@ -27,6 +27,7 @@ public class UpdatedGraphRoute implements Serializable {
     ArrayList<String> exhibitOrder = new ArrayList<>(); // Order of exhibits of interest
     ArrayList<IdentifiedWeightedEdge> edgeList;
     HashMap<String, Double> exhibitDistances = new HashMap<>();
+    DijkstraShortestPath<String, IdentifiedWeightedEdge> dijkstraShortestPath;
 
     // Indexes the progress of user in the route, in terms of exhibit indices in exhibitOrder
     private int nextExhibitIndex = 0;
@@ -57,8 +58,7 @@ public class UpdatedGraphRoute implements Serializable {
         ArrayList<String> unvisitedTargets = new ArrayList<>(targets);
 
         // Create DSP object to compute path costs
-        DijkstraShortestPath<String, IdentifiedWeightedEdge> dijkstraShortestPath
-                = new DijkstraShortestPath<>(zooGraph);
+        this.dijkstraShortestPath =  new DijkstraShortestPath<>(zooGraph);
 
         // Add the starting point to exhibit order, and create objects to track route creation
         String currVertex = startVertex;
@@ -76,7 +76,9 @@ public class UpdatedGraphRoute implements Serializable {
 
             // Find the closest vertex
             for (String vertex : unvisitedTargets) {
-                tempPathWeight = dijkstraShortestPath.getPathWeight(currVertex, vertex);
+                String exhibitGroupId = vertexInfo.get(vertex).group_id;
+                tempPathWeight = getPathWeight(currVertex, vertex);
+
                 if (tempPathWeight < closestPathWeight) {
                     closestVertex = vertex;
                     closestPathWeight = tempPathWeight;
@@ -84,7 +86,7 @@ public class UpdatedGraphRoute implements Serializable {
             }
 
             // Go to next closest exhibit
-            currPath = dijkstraShortestPath.getPath(currVertex, closestVertex);
+            currPath = getPath(currVertex, closestVertex);
             // Add path to total path
             totalEdges.addAll(currPath.getEdgeList());
             totalWeight += currPath.getWeight();
@@ -97,7 +99,7 @@ public class UpdatedGraphRoute implements Serializable {
         }
 
         // Return to startVertex
-        currPath = dijkstraShortestPath.getPath(currVertex, startVertex);
+        currPath = getPath(currVertex, startVertex);
         totalEdges.addAll(currPath.getEdgeList());
         exhibitOrder.add(startVertex);
         totalWeight += currPath.getWeight();
@@ -105,6 +107,48 @@ public class UpdatedGraphRoute implements Serializable {
         this.pathEdges = new GraphWalk<>(
                 zooGraph, startVertex, startVertex, totalEdges, totalWeight);
         this.edgeList = getEdgeList();
+    }
+
+    /**
+     * Wrapper method for getPath, taking care of the case where locations are subexhibits of groups
+     * @param locationA - first location
+     * @param locationB - destination location
+     * @return GraphPath from locationA to locationB
+     */
+    public GraphPath<String, IdentifiedWeightedEdge> getPath(String locationA, String locationB) {
+        String exhibitGroupIdA = vertexInfo.get(locationA).group_id;
+        String exhibitGroupIdB = vertexInfo.get(locationB).group_id;
+        if (exhibitGroupIdA != null) {
+            locationA = exhibitGroupIdA;
+        }
+        if (exhibitGroupIdB != null) {
+            locationB = exhibitGroupIdB;
+        }
+        return dijkstraShortestPath.getPath(locationA, locationB);
+    }
+
+    /**
+     * Wrapper method for getPathWeight, taking care of the case where locations are subexhibits of groups
+     * @param locationA - first location
+     * @param locationB - destination location
+     * @return double path weight from locationA to locationB
+     */
+    public double getPathWeight(String locationA, String locationB) {
+        String exhibitGroupIdA = vertexInfo.get(locationA).group_id;
+        String exhibitGroupIdB = vertexInfo.get(locationB).group_id;
+        if (exhibitGroupIdA != null) {
+            locationA = exhibitGroupIdA;
+        }
+        if (exhibitGroupIdB != null) {
+            locationB = exhibitGroupIdB;
+        }
+        return dijkstraShortestPath.getPathWeight(locationA, locationB);
+    }
+
+    public String getExhibitOrGroupID(String location) {
+        String group_id = vertexInfo.get(location).group_id;
+        if (group_id != null) return group_id;
+        else return location;
     }
 
     /**
@@ -162,6 +206,7 @@ public class UpdatedGraphRoute implements Serializable {
         currentLocation = exhibitOrder.get(nextExhibitIndex);
         this.nextExhibitIndex++;
         String destExhibit = exhibitOrder.get(nextExhibitIndex);
+        destExhibit = getExhibitOrGroupID(destExhibit);
 
         boolean reachedNextLocation = false;
         // Traverse edges, until after we encounter an edge with the destExhibit vertex

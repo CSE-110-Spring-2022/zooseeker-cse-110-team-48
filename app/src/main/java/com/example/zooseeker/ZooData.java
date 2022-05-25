@@ -27,12 +27,14 @@ public class ZooData {
             // from the strings in our JSON to this Enum.
             @SerializedName("gate") GATE,
             @SerializedName("exhibit") EXHIBIT,
-            @SerializedName("intersection") INTERSECTION
+            @SerializedName("intersection") INTERSECTION,
+            @SerializedName("exhibit_group") EXHIBIT_GROUP
         }
 
         public String id;
         public Kind kind;
         public String name;
+        public String group_id;
         public List<String> tags;
         public float lat;
         public float lng;

@@ -6,6 +6,7 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.provider.ContactsContract;
 import android.util.Log;
 
 import androidx.activity.ComponentActivity;
@@ -13,13 +14,15 @@ import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Set;
 
 /**
  * Object to track user location changes, updating app as a consequence
  *  Uses a location permissions checker to ensure app GPS access
  */
 public class UserLocationTracker {
-
+    private Location lastUserLocation;
     /**
      * Auxiliary location observer interface, should be implemented by activities relying on GPS
      */
@@ -65,7 +68,9 @@ public class UserLocationTracker {
                 Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             throw new SecurityException("App need fine and course locations for user tracking!");
         }
-        locationManager.requestLocationUpdates(provider, 0, 1.0f, locationListener);
+        locationManager.requestLocationUpdates(provider, 0, 0.0f, locationListener);
+        lastUserLocation = locationManager.getLastKnownLocation(provider);
+
     }
 
     /**
@@ -90,10 +95,61 @@ public class UserLocationTracker {
      * @param location - User's new location
      */
     private void onZooLocationChanged(Location location) {
-        // TODO: ADD CODE HERE if logic for nearest exhibit is needed
-
+        lastUserLocation = location;
         for (LocationObserver o : observers) {
             o.update(location);
         }
+    }
+
+    /**
+     * Returns the last known user location
+     * @return Location of last user gps hit
+     */
+    public Location getUserLocation() {
+        return lastUserLocation;
+    }
+
+    /**
+     * Returns the name of the closest exhibit to the current user location.
+     * @param location - Location of user
+     * @param vertexInfoHashMap - map of zoo locations and info
+     * @return Name of the exhibit closest to user, in id form
+     */
+    public static String nearestExhibit(
+            Location location, HashMap<String, ZooData.VertexInfo> vertexInfoHashMap) {
+        Set<String> zooLocations = vertexInfoHashMap.keySet();
+
+        String nearest = "";
+        double nearestDist = Double.MAX_VALUE;
+
+        for (String zooLocation : zooLocations) {
+            ZooData.VertexInfo currVertex = vertexInfoHashMap.get(zooLocation);
+            double currDist = distance(getExhibitLocation(currVertex), location);
+            if (currDist < nearestDist) {
+                nearest = currVertex.id;
+                nearestDist = currDist;
+            }
+        }
+
+        return nearest;
+    }
+
+    /**
+     * Returns a Location of an exhibit in vertexInfo format
+     */
+    public static Location getExhibitLocation(ZooData.VertexInfo vertexInfo) {
+        Location exhibitLocation = new Location("");
+        exhibitLocation.setLatitude(vertexInfo.lat);
+        exhibitLocation.setLongitude(vertexInfo.lng);
+
+        return exhibitLocation;
+    }
+
+    /**
+     * Returns the approximate distance in feet between locations a and b
+     * @return distance between a and b in feet
+     */
+    public static double distance(Location a, Location b) {
+        return a.distanceTo(b) * 3.28084;
     }
 }
