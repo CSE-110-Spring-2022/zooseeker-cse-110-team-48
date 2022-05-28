@@ -54,7 +54,7 @@ public class Route {
     }
 
     // Fields for routing
-    private ArrayList<Waypoint> routeOrder = new ArrayList<>();
+    public ArrayList<Waypoint> routeOrder = new ArrayList<>();
     private DijkstraShortestPath dijkstraShortestPath;
 
     // Zoo data objects
@@ -82,9 +82,6 @@ public class Route {
         this.dijkstraShortestPath =  new DijkstraShortestPath<>(zooGraph);
 
         // Create starting waypoint based on user location, and add to route ordering
-        this.routeOrder.add(getWaypoint(startId));
-        routeOrder.get(0).setVisited(true);
-
         String currExhibitId = startId;
 
         // Loop through all exhibits of interest until we visit all of them
@@ -97,8 +94,8 @@ public class Route {
             unvisitedExhibitIds.remove(nextExhibitId);
         }
 
-        // Re-add starting waypoint to end of route order
-        this.routeOrder.add(getWaypoint(startId));
+        // Add exit gate waypoint to end of route order
+        this.routeOrder.add(getWaypoint("entrance_exit_gate"));
     }
 
     /**
@@ -108,8 +105,17 @@ public class Route {
      */
     public Waypoint getWaypoint (String locationId) {
         Location waypointLocation = new Location("");
-        waypointLocation.setLatitude(exhibitInfo.get(locationId).lat);
-        waypointLocation.setLongitude(exhibitInfo.get(locationId).lng);
+
+        // Special case: waypoint has group_id
+        String group_id = exhibitInfo.get(locationId).group_id;
+        if (group_id != null) {
+            waypointLocation.setLatitude(exhibitInfo.get(group_id).lat);
+            waypointLocation.setLongitude(exhibitInfo.get(group_id).lng);
+        } else {
+            waypointLocation.setLatitude(exhibitInfo.get(locationId).lat);
+            waypointLocation.setLongitude(exhibitInfo.get(locationId).lng);
+        }
+
         Waypoint waypoint= new Waypoint(
                 exhibitInfo.get(locationId).id,
                 exhibitInfo.get(locationId).name,
@@ -180,18 +186,23 @@ public class Route {
 
     /**
      * Returns the total distance from the start of route to exhibitId's exhibit
-     * @param exhibitId
-     * @return
+     * @param exhibitId - exhibit to go to
+     * @param startId - start of route
+     * @return distance from start to exhibit
      */
-    public double getTotalDistance(String exhibitId) {
+    public double getTotalDistance(String exhibitId, String startId) {
         double totalDistance = 0.0;
         int currExhibitIndex = 0;
+
+        totalDistance += getPathWeight(startId, routeOrder.get(currExhibitIndex).id);
         // Loop until exhibitId is encountered in route order
         while (!routeOrder.get(currExhibitIndex).id.equals(exhibitId)) {
             // Add distance between current waypoint and next waypoint
             totalDistance += getPathWeight(
                     routeOrder.get(currExhibitIndex).id,
                     routeOrder.get(currExhibitIndex + 1).id);
+
+            currExhibitIndex++;
         }
         return totalDistance;
     }
@@ -201,35 +212,35 @@ public class Route {
      * @return true if route ended
      */
     public boolean reachedEnd() {
-        return routeOrder.get(-1).visited;
+        return routeOrder.get(routeOrder.size() - 1).visited;
     }
 
     /**
-     * Get the current exhibit/waypoint index
-     * @return index of current waypoint in route order array
+     * Get the next exhibit/waypoint index
+     * @return index of next waypoint in route order array
      */
-    public int getCurrentExhibitIndex() {
+    public int getNextExhibitIndex() {
         int currWaypointIndex = 0;
 
-        // Loops until unvisited waypoint, returning latest visited waypoint
+        // Loops until unvisited waypoint, returns index of next exhibit to visit
         while (routeOrder.get(currWaypointIndex).visited) {
             currWaypointIndex++;
         }
-        return currWaypointIndex - 1;
+        return currWaypointIndex;
     }
 
     /**
-     * Advances route to next exhibit, returning directions to go there
+     * Advances route to next exhibit, returning directions to go there from user location
+     * @param startId: id of starting location for directions
      * @return List of Strings representing directions to next exhibit
      */
-    public ArrayList<String> advanceToNextExhibit() {
-        Waypoint currWaypoint = routeOrder.get(getCurrentExhibitIndex());
-        Waypoint nextWaypoint = routeOrder.get(getCurrentExhibitIndex() + 1);
+    public ArrayList<String> advanceToNextExhibit(String startId) {
+        Waypoint nextWaypoint = routeOrder.get(getNextExhibitIndex());
 
-        ArrayList<String> directionsList = getDirections(currWaypoint, nextWaypoint);
+        ArrayList<String> directionsList = getDirections(startId, nextWaypoint.id);
 
         // Update current waypoint to be visited already
-        currWaypoint.setVisited(true);
+        nextWaypoint.setVisited(true);
 
         return directionsList;
     }
@@ -238,34 +249,44 @@ public class Route {
      * Reverses route to last exhibit visited, giving backtrack directions
      * @return List of Strings representing directions to last exhibit
      */
-    public ArrayList<String> returnToPreviousExhibit() {
-        Waypoint currWaypoint = routeOrder.get(getCurrentExhibitIndex());
-        Waypoint prevWaypoint = routeOrder.get(getCurrentExhibitIndex() - 1);
+    public ArrayList<String> returnToPreviousExhibit(String startId) {
+        Waypoint lastVisitedWaypoint = routeOrder.get(getNextExhibitIndex() - 1);
 
-        ArrayList<String> directionsList = getDirections(currWaypoint, prevWaypoint);
+        ArrayList<String> directionsList = getDirections(startId, lastVisitedWaypoint.id);
 
-        currWaypoint.setVisited(false);
+        lastVisitedWaypoint.setVisited(false);
 
         return directionsList;
     }
 
     /**
-     * Gets arraylist of directions from a starting waypoint to ending waypoint
+     * Gets arraylist of directions from a starting location to ending location
      *  Assumes that the start and end are joined by Dijkstra pathway
-     * @param start - starting waypoint
-     * @param end - ending waypoint
-     * @return ArrayList of directions from start to end waypoints
+     * @param startId - starting location id
+     * @param endId - ending exhibit id
+     * @return ArrayList of directions from start to end locations
      */
-    public ArrayList<String> getDirections(Waypoint start, Waypoint end) {
+    public ArrayList<String> getDirections(String startId, String endId) {
         ArrayList<String> directionsList = new ArrayList<>();
 
         // Get path of travel
-        GraphPath<String, IdentifiedWeightedEdge> path = getPath(start.id, end.id);
+        GraphPath<String, IdentifiedWeightedEdge> path = getPath(startId, endId);
 
+        String currLocationId = startId;
+        String nextLocationId;
         String prevStreet = null;
         // Generate directions for each path
         for (IdentifiedWeightedEdge e : path.getEdgeList()) {
-            directionsList.add(edgeToDirection(e, zooGraph.getEdgeTarget(e), prevStreet));
+            // Disambiguate next location's id (due to undirected graph)
+            if (currLocationId.equals(zooGraph.getEdgeSource(e))) {
+                nextLocationId = zooGraph.getEdgeTarget(e);
+            } else {
+                nextLocationId = zooGraph.getEdgeSource(e);
+            }
+
+            // Get directions and update current location ID
+            directionsList.add(edgeToDirection(e, nextLocationId, prevStreet));
+            currLocationId = nextLocationId;
             prevStreet = trailInfo.get(e.getId()).street;
         }
 
@@ -302,23 +323,26 @@ public class Route {
         return result;
     }
 
-
-    public ArrayList<String> reroute(String currLocationId) {
+    /**
+     * Rerouting algorithm which reorders remaining exhibits to visit
+     * @param startId - Id of nearest zoo location to user
+     */
+    public void reroute(String startId) {
         // Unvisited exhibits array keeps track of which exhibits to find a path to
         ArrayList<String> unvisitedExhibitIds = new ArrayList<>();
 
         // Get id's of all unvisited exhibits of interest
         for (Waypoint unvisitedWaypoint :
-                routeOrder.subList(getCurrentExhibitIndex() + 1, routeOrder.size() - 1)) {
+                routeOrder.subList(getNextExhibitIndex(), routeOrder.size() - 1)) {
             unvisitedExhibitIds.add(unvisitedWaypoint.id);
         }
 
         // Remove all unvisited exhibits from route list, to be added later in different order
-        while (!routeOrder.get(-1).visited) {
-            routeOrder.remove(-1);
+        while (!routeOrder.get(routeOrder.size() - 1).visited) {
+            routeOrder.remove(routeOrder.size() - 1);
         }
 
-        String currExhibitId = currLocationId;
+        String currExhibitId = startId;
 
         // Loop through all exhibits of interest until we visit all of them
         while(unvisitedExhibitIds.size() > 0) {
@@ -330,10 +354,34 @@ public class Route {
             unvisitedExhibitIds.remove(nextExhibitId);
         }
 
-        // Re-add first waypoint to end of route order
-        this.routeOrder.add(routeOrder.get(0));
+        // Re-add gate waypoint to end of route order
+        this.routeOrder.add(getWaypoint("entrance_exit_gate"));
+    }
 
-        return advanceToNextExhibit();//TODO: Consider NOT updating current waypoint for this call?
+    /**
+     * Checks if user is off-track
+     * @param startId - id of location closest to user
+     * @return true if closest exhibit to visit is no longer next exhibit to visit
+     */
+    public boolean isOffTrack(String startId) {
+        Waypoint nextExhibit = routeOrder.get(getNextExhibitIndex());
+        double distToNextExhibit = getPathWeight(startId, nextExhibit.id);
+
+        for (int otherExhibitIndex = getNextExhibitIndex() + 1;
+             otherExhibitIndex < routeOrder.size();
+             otherExhibitIndex ++) {
+            if (distToNextExhibit > getPathWeight(startId, routeOrder.get(otherExhibitIndex).id)) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Removes next exhibit from consideration, replanning afterwards
+     * @param startId - location nearest to user
+     */
+    public void skipNextExhibit(String startId) {
+        routeOrder.remove(getNextExhibitIndex());
+        reroute(startId);
     }
 
 }
