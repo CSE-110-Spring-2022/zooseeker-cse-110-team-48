@@ -8,6 +8,7 @@ import org.jgrapht.alg.shortestpath.DijkstraShortestPath;
 
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * This class represents a zoo route, using a array
@@ -155,7 +156,7 @@ public class Route {
      * @return GraphPath from locationA to locationB
      */
     public GraphPath<String, IdentifiedWeightedEdge> getPath(String startId, String endId) {
-        String exhibitGroupIdA = exhibitInfo.get(startId).group_id;
+        String exhibitGroupIdA = Objects.requireNonNull(exhibitInfo.get(startId)).group_id;
         String exhibitGroupIdB = exhibitInfo.get(endId).group_id;
         if (exhibitGroupIdA != null) {
             startId = exhibitGroupIdA;
@@ -208,6 +209,14 @@ public class Route {
     }
 
     /**
+     * Checks if we are still at beginning of route (no exhibits visited yet)
+     * @return true if no exhibits have been visited yet
+     */
+    public boolean atStart() {
+        return !routeOrder.get(0).visited;
+    }
+
+    /**
      * Checks if we have reached the end of route
      * @return true if route ended
      */
@@ -257,6 +266,15 @@ public class Route {
         lastVisitedWaypoint.setVisited(false);
 
         return directionsList;
+    }
+
+    /**
+     * Gets the directions from user location to first unvisited exhibit
+     * @param startId - location closest to user
+     * @return - list of directions
+     */
+    public ArrayList<String> getDirectionsToNextExhibit(String startId) {
+        return getDirections(startId, routeOrder.get(getNextExhibitIndex()).id);
     }
 
     /**
@@ -338,9 +356,7 @@ public class Route {
         }
 
         // Remove all unvisited exhibits from route list, to be added later in different order
-        while (!routeOrder.get(routeOrder.size() - 1).visited) {
-            routeOrder.remove(routeOrder.size() - 1);
-        }
+        routeOrder = new ArrayList<>(routeOrder.subList(0, getNextExhibitIndex()));
 
         String currExhibitId = startId;
 
@@ -367,8 +383,9 @@ public class Route {
         Waypoint nextExhibit = routeOrder.get(getNextExhibitIndex());
         double distToNextExhibit = getPathWeight(startId, nextExhibit.id);
 
+        // Loops through all other exhibits (excluding exit gate) and checks if they're closer
         for (int otherExhibitIndex = getNextExhibitIndex() + 1;
-             otherExhibitIndex < routeOrder.size();
+             otherExhibitIndex < routeOrder.size() - 1;
              otherExhibitIndex ++) {
             if (distToNextExhibit > getPathWeight(startId, routeOrder.get(otherExhibitIndex).id)) return true;
         }
@@ -384,4 +401,40 @@ public class Route {
         reroute(startId);
     }
 
+    /**
+     * Returns exhibits in the route, in order of visitation. INCLUDES the exit gate.
+     * @return ArrayList of exhibit id's in order of route visitation
+     */
+    public ArrayList<String> getExhibitsInOrder() {
+        ArrayList<String> results = new ArrayList<>();
+        for (Waypoint w : this.routeOrder) {
+            results.add(w.getId());
+        }
+        return results;
+    }
+
+    /**
+     * Finds nearest location to user location
+     * @param locationInfo - map of id's to zoo vertex info objects
+     * @param userLocation - location of user as read by app
+     * @return the zoo location closest to the user, as determined by Euclidean distance
+     */
+    public static String getNearestLocationId(Map<String, ZooData.VertexInfo> locationInfo,
+                                              Location userLocation) {
+        String nearestLocation = locationInfo.get("entrance_exit_gate").id;
+        float nearestLocationDist = Float.MAX_VALUE; // Distance in METERS, does not matter
+
+        for (String locationId : locationInfo.keySet()) {
+            Location zooLocation = new Location("");
+            zooLocation.setLatitude(locationInfo.get(locationId).lat);
+            zooLocation.setLongitude(locationInfo.get(locationId).lng);
+
+            if (nearestLocationDist > userLocation.distanceTo(zooLocation)) {
+                nearestLocationDist = userLocation.distanceTo(zooLocation);
+                nearestLocation = locationId;
+            }
+        }
+
+        return nearestLocation;
+    }
 }

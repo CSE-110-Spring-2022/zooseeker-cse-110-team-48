@@ -26,41 +26,23 @@ import java.util.Map;
  * Activity for the list of locations to visit, called from MainActivity
  */
 public class LocationsListActivity extends AppCompatActivity {
-    public static final String GRAPH_ROUTE_KEY = "route";
     public RecyclerView recyclerView;
     private LocationsListViewModel viewModel;
-    private ArrayList<String> directions;
-    LocationsListItemDao locationsListItemDao;
+    private LocationsListItemDao locationsListItemDao;
+    private String asset_file;
+    private DataFilesReader graphReader;
+    private UserLocationTracker tracker;
 
-    // Objects containing info of graphs
-    private AbstractBaseGraph<String, IdentifiedWeightedEdge> zooGraph;
-    private HashMap<String, ZooData.VertexInfo> vertexInfo;
-    private HashMap<String, ZooData.EdgeInfo> edgeInfo;
-
-    List<String> exhibitsInPlan;
-    UpdatedGraphRoute route;
-    String startVertex;
+    // Map containing zoo location info
+    private Map<String, ZooData.VertexInfo> vertexInfo;
+    private Route route;
+    private String nearestLocationId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_locations_list);
         Intent intent = getIntent();
-
-        UserLocationTracker tracker = new UserLocationTracker(this);
-
-        // Get zoo graph objects
-        DataFilesReader graphReader = new DataFilesReader(this, intent.getExtras().getString("assets_list_file"));
-        this.zooGraph = (AbstractBaseGraph<String, IdentifiedWeightedEdge>) graphReader.getGraph();
-        this.vertexInfo = (HashMap<String, ZooData.VertexInfo>) graphReader.getVertexInfo();
-        this.edgeInfo = (HashMap<String, ZooData.EdgeInfo>) graphReader.getEdgeInfo();
-
-        Location userLocation = tracker.getUserLocation();
-        if (userLocation != null) {
-            this.startVertex = UserLocationTracker.nearestExhibit(userLocation, vertexInfo);
-        } else {
-            this.startVertex = graphReader.getGateId();
-        }
 
         // Initialize view model for plan list
         LocationsListViewModel viewModel = new ViewModelProvider(this).get(LocationsListViewModel.class);
@@ -87,70 +69,78 @@ public class LocationsListActivity extends AppCompatActivity {
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(adapter);
 
-        updateDirections(startVertex);
+        // Create user location tracker
+        this.tracker = UserLocationTrackerSingleton.getTracker();
+
+        // Get zoo graph objects
+        this.asset_file = intent.getExtras().getString("assets_list_file");
+        this.graphReader = new DataFilesReader(this, asset_file);
+        this.vertexInfo = graphReader.getVertexInfo();
+
+        // Pull user location and find nearest zoo location
+        Location userLocation = tracker.getUserLocation();
+        this.nearestLocationId = (userLocation == null)
+                ? graphReader.getGateId() : Route.getNearestLocationId(vertexInfo, userLocation);
+
+        createRoute();
     }
 
     /**
-     * This method creates a GraphRoute using the locations in the database. The GraphRoute object
-     *  handles directions generation, creating an ArrayList of directions to pass to the directions
-     *  Activity.
-     * @param startVertex - ID of starting vertex of route
+     * Pulls exhibit id in zoo closest to user's lat and lng
+     * @return string id of nearest location vertex in zoo
      */
-    private void updateDirections(String startVertex) {
+    private String getNearestLocationId() {
+        // Pull user location and find nearest zoo location
+        Location userLocation = tracker.getUserLocation();
+        return (userLocation == null)
+                ? graphReader.getGateId() : Route.getNearestLocationId(vertexInfo, userLocation);
+    }
+
+    /**
+     * This methods creates a route based on database exhibit entries
+     */
+    private void createRoute() {
         // Get database instance
         LocationsDatabase db = LocationsDatabase.getSingleton(this);
         locationsListItemDao = db.locationsListItemDao();
 
         // Get exhibits to visit
         List<LocationsListItem> exhibitsToVisit = locationsListItemDao.getAll();
-        ArrayList<String> targets = new ArrayList<>();
+        ArrayList<String> exhibitIds = new ArrayList<>();
         for (LocationsListItem element : exhibitsToVisit) {
-            targets.add(element.textId);
+            exhibitIds.add(element.textId);
         }
 
         // Construct route (TSP heuristic), and retrieve major vertices in route planned
-        //this.route = new GraphRoute(zooGraph, vertexInfo, edgeInfo, targets, startVertex);
-        this.route = new UpdatedGraphRoute(zooGraph, vertexInfo, edgeInfo, targets, startVertex);
-        this.exhibitsInPlan = route.exhibitsInOrder();
+        this.route = new Route(this.graphReader, exhibitIds, getNearestLocationId());
+
+        // Retrieve all exhibits but last exit gate
+        List<String> exhibitIdsToVisit = route.getExhibitsInOrder().subList(0, route.getExhibitsInOrder().size() - 1);
 
         // We want to delete all locations and re-add them in proper order to the database
-        List<LocationsListItem> unorderedExhibits = locationsListItemDao.getAll();
         locationsListItemDao.deleteAll();
 
         // Re-adds locations in order visited in plan, with proper distances calculated by route.
-        for(int i = 1; i < exhibitsInPlan.size() - 1; i++ ) {
-            String location = exhibitsInPlan.get(i);
-            String properName = "";
-            for (LocationsListItem item : unorderedExhibits) {
-                if (item.textId.equals(location)) {
-                    properName = item.text;
-                }
-            }
-            double distance = route.getRouteDistance(location);
-            viewModel.createLocation(properName, location, distance);
+        for (String exhibitId : exhibitIdsToVisit) {
+            String exhibitName = vertexInfo.get(exhibitId).name;
+            double exhibitDistance = route.getTotalDistance(exhibitId, nearestLocationId);
+            viewModel.createLocation(exhibitName, exhibitId, exhibitDistance);
         }
 
-        // Keeps getting directions from GraphRoute, condensed into a ArrayList<String> of directions
-        this.directions = new ArrayList<>();
-
-        // Generate directions if there are exhibits to generate directions to.
-        if (locationsListItemDao.getDataCount() > 0) {
-            while (!this.route.reachedEnd()) {
-                this.directions.add(UpdatedGraphRoute.condenseDirectionsList(route.advanceToNextExhibit()));
-            }
-        }
+        // Set singleton route object to this route
+        RouteSingleton.setRoute(route);
     }
 
     /**
      * Launches directions activity, passing serialized array of directions through intent.putExtra
      */
     public void launchRoutePlan(View view) {
-        if(locationsListItemDao.getDataCount() == 0){
+        if (locationsListItemDao.getDataCount() == 0){
             Utilities.showAlert(this, "Add at least one exhibit to your route!");
         }else {
-            updateDirections(startVertex);
+            createRoute();
             Intent intent = new Intent(this, RouteActivity.class);
-            intent.putExtra("directions_list", this.directions);
+            intent.putExtra("assets_list_file", asset_file); // Pass assets file paths
             startActivity(intent);
         }
     }
