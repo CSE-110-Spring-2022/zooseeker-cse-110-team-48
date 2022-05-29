@@ -75,9 +75,15 @@ public class RouteTest {
         Route route = new Route(graphReader, exhibits, "entrance_exit_gate");
 
         ArrayList<String> directionsList = route.advanceToNextExhibit("entrance_exit_gate");
+        assertHasStreet("Gate Path", directionsList.get(0));
+        int lastIndex = directionsList.size() - 1;
+        assertHasStreet("Orangutan Trail", directionsList.get(lastIndex));
         directionsList = route.advanceToNextExhibit("siamang");
         directionsList = route.advanceToNextExhibit("toucan");
         directionsList = route.advanceToNextExhibit("crocodile");
+        assertHasStreet("Hippo Trail", directionsList.get(0));
+        lastIndex = directionsList.size() - 1;
+        assertHasStreet("Gate Path", directionsList.get(lastIndex));
         Assert.assertTrue(route.reachedEnd());
     }
 
@@ -92,7 +98,9 @@ public class RouteTest {
         ArrayList<String> directionsList = route.advanceToNextExhibit("intxn_front_monkey");
         directionsList = route.advanceToNextExhibit("flamingo");
         directionsList = route.returnToPreviousExhibit("gorilla");
+        assertNextExhibitIdEquals(route, "spoonbill");
         directionsList = route.returnToPreviousExhibit("crocodile");
+        assertNextExhibitIdEquals(route, "flamingo");
         Assert.assertTrue(!route.reachedEnd());
     }
 
@@ -111,7 +119,9 @@ public class RouteTest {
             throw new AssertionError("Did not detect off-track");
         }
         route.reroute("hippo");
+        assertNextExhibitIdEquals(route, "crocodile");
         directionsList = route.advanceToNextExhibit("hippo"); // Should go to crocodiles
+        assertNextExhibitIdEquals(route, "toucan");
         directionsList = route.advanceToNextExhibit("crocodile"); // Should go to toucans
     }
 
@@ -132,5 +142,19 @@ public class RouteTest {
         route.advanceToNextExhibit("siamang");
         route.advanceToNextExhibit("crocodile");
         Assert.assertTrue(route.reachedEnd());
+    }
+
+    // Source: https://stackoverflow.com/a/2275035
+    private boolean isSubstringOf(String substring, String superstring) {
+        return superstring.toUpperCase().contains(substring.toUpperCase());
+    }
+
+    private void assertHasStreet(String expected, String direction) {
+        Assert.assertTrue(isSubstringOf(expected, direction));
+    }
+
+    private void assertNextExhibitIdEquals(Route route, String expected) {
+        String nextExhibitId = route.routeOrder.get(route.getNextExhibitIndex()).id;
+        Assert.assertEquals(expected, nextExhibitId);
     }
 }
