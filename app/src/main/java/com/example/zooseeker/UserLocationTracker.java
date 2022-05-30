@@ -22,7 +22,7 @@ import java.util.Set;
  *  Uses a location permissions checker to ensure app GPS access
  */
 public class UserLocationTracker {
-    private Location lastUserLocation;
+    public Location lastUserLocation;
     /**
      * Auxiliary location observer interface, should be implemented by activities relying on GPS
      */
@@ -39,8 +39,8 @@ public class UserLocationTracker {
     private final PermissionChecker permissionChecker;
     private ComponentActivity parentActivity;
 
-    // Debug flag to enable real location updates
-    public boolean useGPSLocations = true;
+    // Debug flag to enable/disable real location updates
+    public boolean useGPSLocations = false;
 
     /**
      * Ctor for the location tracker.

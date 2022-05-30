@@ -2,6 +2,9 @@ package com.example.zooseeker;
 
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Context;
 import android.content.Intent;
@@ -16,7 +19,7 @@ import android.widget.ArrayAdapter;
 import java.util.List;
 import java.util.Map;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements OnAdapterItemClickListener {
 
     // Path to json file containing assets to load
     public final String ASSETS_LIST_FILE = "zoo_data_files.json";
@@ -36,7 +39,7 @@ public class MainActivity extends AppCompatActivity {
         Map<String, ZooData.VertexInfo> vertexSet = graphReader.getVertexInfo();
         Map<String, ZooData.VertexInfo> vertexInfo = vertexSet;
 
-        // Get exhibits list
+        // Get exhibits list for searching
         List<Exhibit> exhibitList = Exhibit.returnExhibits(vertexInfo);
 
         // Instantiate AutoCompleteTextView using custom exhibit adapter
@@ -51,7 +54,7 @@ public class MainActivity extends AppCompatActivity {
         this.db = LocationsDatabase.getSingleton(context);
         this.locationsListItemDao = db.locationsListItemDao();
 
-        // Instantiate tracker
+        // Instantiate and set global singleton tracker
         UserLocationTracker tracker = new UserLocationTracker(this);
         UserLocationTrackerSingleton.setTracker(tracker);
 
@@ -95,6 +98,22 @@ public class MainActivity extends AppCompatActivity {
                 }
         );
 
+        // Initialize view model for selected exhibits list (unordered)
+        LocationsListViewModel viewModel = new ViewModelProvider(this).get(LocationsListViewModel.class);
+
+        // Set up adapter connection between recyclerView and database of locations
+        LocationsListAdapter adapter = new LocationsListAdapter(this);
+        adapter.setHasStableIds(true);
+        adapter.setOnDeleteClickedHandler(
+                viewModel::deleteLocation
+        );
+
+        viewModel.getLocationsListItems().observe(this, adapter::setLocationsListItems);
+        // Finish creating adapter connection between recyclerView and database of locations
+        RecyclerView recyclerView = findViewById(R.id.unordered_exhibits_list);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        recyclerView.setAdapter(adapter);
+
         // Launches the planning list
         planningListButton.setOnClickListener(
                 new View.OnClickListener() {
@@ -104,6 +123,14 @@ public class MainActivity extends AppCompatActivity {
                 }
         );
 
+    }
+
+    /**
+     * Updates the list size count when item is deleted in the RecyclerView
+     */
+    @Override
+    public void onAdapterItemClickListener() {
+        updateListCount();
     }
 
     /**

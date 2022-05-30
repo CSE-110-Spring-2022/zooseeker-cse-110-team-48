@@ -21,6 +21,12 @@ public class LocationsListAdapter extends RecyclerView.Adapter<LocationsListAdap
     private List<LocationsListItem> locationItems = Collections.emptyList();
     private Consumer<LocationsListItem> onDeleteClicked;
 
+    private OnAdapterItemClickListener onAdapterItemClickListener = null;
+
+    public LocationsListAdapter(OnAdapterItemClickListener listener) {
+        this.onAdapterItemClickListener = listener;
+    }
+
     public void setLocationsListItems(List<LocationsListItem> newLocationsItems) {
         this.locationItems.clear();
         this.locationItems = newLocationsItems;
@@ -59,7 +65,7 @@ public class LocationsListAdapter extends RecyclerView.Adapter<LocationsListAdap
     /**
      * ViewHolder for entries in the locations list
      */
-    public class ViewHolder extends RecyclerView.ViewHolder {
+    public class ViewHolder extends RecyclerView.ViewHolder{
         private final TextView textView;
         private final TextView distanceView;
         private LocationsListItem locationItem;
@@ -73,11 +79,18 @@ public class LocationsListAdapter extends RecyclerView.Adapter<LocationsListAdap
             this.delete = itemView.findViewById(R.id.delete_btn);
             this.planningBtn = itemView.findViewById(R.id.view_list_btn);
 
+            setTextSize(25);
 
             this.delete.setOnClickListener(view -> {
                 if (onDeleteClicked == null) return;
                 onDeleteClicked.accept(locationItem);
+                onAdapterItemClickListener.onAdapterItemClickListener();
             });
+        }
+
+        public void setTextSize(int size) {
+            this.textView.setTextSize(size);
+            this.distanceView.setTextSize(size);
         }
 
         public LocationsListItem getLocationItem() {return locationItem; }
