@@ -5,7 +5,7 @@ import android.app.AlertDialog;
 
 import java.util.Optional;
 
-public class warningUtilities {
+public class WarningUtilities {
     /**
      * This method shows an alert pop-up for an activity, when an error occurs
      * @param activity - parent activity of pop-up

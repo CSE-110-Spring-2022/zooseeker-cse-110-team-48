@@ -10,6 +10,7 @@ import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Custom ArrayAdapter which takes Exhibit objects as generic search items
@@ -38,6 +39,7 @@ public class ExhibitSearchAdapter extends ArrayAdapter<Exhibit> {
                 for (Exhibit exhibit : mExhibits) {
                     // Adds exhibit to suggestions if tags match
                     for (String tag : exhibit.tags) {
+                        tag = tag.toLowerCase();
                         if (tag.contains(constraint.toString().toLowerCase())) {
                             suggestions.add(exhibit);
                             break;

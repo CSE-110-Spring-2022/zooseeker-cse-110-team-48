@@ -31,8 +31,6 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        UserLocationTracker tracker = new UserLocationTracker(this);
-
         // Get graph vertices
         DataFilesReader graphReader = new DataFilesReader(this, ASSETS_LIST_FILE);
         Map<String, ZooData.VertexInfo> vertexSet = graphReader.getVertexInfo();
@@ -52,6 +50,23 @@ public class MainActivity extends AppCompatActivity {
         Context context = getApplication().getApplicationContext();
         this.db = LocationsDatabase.getSingleton(context);
         this.locationsListItemDao = db.locationsListItemDao();
+
+        // Instantiate tracker
+        UserLocationTracker tracker = new UserLocationTracker(this);
+        UserLocationTrackerSingleton.setTracker(tracker);
+
+        // Setup debug toggle for using real GPS
+        Button debug_gps_btn = findViewById(R.id.debug_gps_toggle_button);
+        debug_gps_btn.setOnClickListener(v -> {
+            // Toggle tracker's use of real locations
+            boolean willUseGPS = !tracker.useGPSLocations;
+            if (willUseGPS) {
+                debug_gps_btn.setText("GPS Enabled");
+            } else {
+                debug_gps_btn.setText("GPS Disabled");
+            }
+            tracker.useGPSLocations = willUseGPS;
+        });
 
         // Instantiate button to view planning list
         Button planningListButton = findViewById(R.id.view_list_btn);

@@ -6,6 +6,7 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.provider.ContactsContract;
 import android.util.Log;
 
 import androidx.activity.ComponentActivity;
@@ -13,13 +14,15 @@ import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Set;
 
 /**
  * Object to track user location changes, updating app as a consequence
  *  Uses a location permissions checker to ensure app GPS access
  */
 public class UserLocationTracker {
-
+    private Location lastUserLocation;
     /**
      * Auxiliary location observer interface, should be implemented by activities relying on GPS
      */
@@ -35,6 +38,9 @@ public class UserLocationTracker {
     private LocationManager locationManager;
     private final PermissionChecker permissionChecker;
     private ComponentActivity parentActivity;
+
+    // Debug flag to enable real location updates
+    public boolean useGPSLocations = true;
 
     /**
      * Ctor for the location tracker.
@@ -65,7 +71,9 @@ public class UserLocationTracker {
                 Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             throw new SecurityException("App need fine and course locations for user tracking!");
         }
-        locationManager.requestLocationUpdates(provider, 0, 1.0f, locationListener);
+        locationManager.requestLocationUpdates(provider, 0, 0.0f, locationListener);
+        lastUserLocation = locationManager.getLastKnownLocation(provider);
+
     }
 
     /**
@@ -90,10 +98,20 @@ public class UserLocationTracker {
      * @param location - User's new location
      */
     private void onZooLocationChanged(Location location) {
-        // TODO: ADD CODE HERE if logic for nearest exhibit is needed
-
+        if (!useGPSLocations) {
+            return;
+        }
+        lastUserLocation = location;
         for (LocationObserver o : observers) {
             o.update(location);
         }
+    }
+
+    /**
+     * Returns the last known user location
+     * @return Location of last user gps hit
+     */
+    public Location getUserLocation() {
+        return lastUserLocation;
     }
 }

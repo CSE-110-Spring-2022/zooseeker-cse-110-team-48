@@ -30,7 +30,13 @@ public class Exhibit {
         for (String location : vertexInfo.keySet()) {
             ZooData.VertexInfo v = vertexInfo.get(location);
             if (v != null && v.kind.equals(ZooData.VertexInfo.Kind.EXHIBIT)) {
-                exhibitList.add(new Exhibit(v.id, v.name, v.tags));
+                List<String> tags = v.tags;
+                // Add parent name to tags if exhibit is part of an exhibit group
+                if (v.group_id != null) {
+                    tags.add(vertexInfo.get(v.group_id).name);
+                }
+                Exhibit e = new Exhibit(v.id, v.name, tags);
+                exhibitList.add(e);
             }
         }
 
