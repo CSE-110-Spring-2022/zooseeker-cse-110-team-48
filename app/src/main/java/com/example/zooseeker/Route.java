@@ -221,7 +221,7 @@ public class Route {
      * @return true if route ended
      */
     public boolean reachedEnd() {
-        return routeOrder.get(routeOrder.size() - 1).visited;
+        return routeOrder.get(routeOrder.size() - 2).visited;
     }
 
     /**
@@ -239,14 +239,14 @@ public class Route {
     }
 
     /**
-     * Advances route to next exhibit, returning directions to go there from user location
+     * Advances route to next exhibit, returning detailed directions to go there from user location
      * @param startId: id of starting location for directions
      * @return List of Strings representing directions to next exhibit
      */
     public ArrayList<String> advanceToNextExhibit(String startId) {
         Waypoint nextWaypoint = routeOrder.get(getNextExhibitIndex());
 
-        ArrayList<String> directionsList = getDirections(startId, nextWaypoint.id);
+        ArrayList<String> directionsList = getDetailedDirections(startId, nextWaypoint.id);
 
         // Update current waypoint to be visited already
         nextWaypoint.setVisited(true);
@@ -255,13 +255,13 @@ public class Route {
     }
 
     /**
-     * Reverses route to last exhibit visited, giving backtrack directions
+     * Reverses route to last exhibit visited, returns detailed directions
      * @return List of Strings representing directions to last exhibit
      */
     public ArrayList<String> returnToPreviousExhibit(String startId) {
         Waypoint lastVisitedWaypoint = routeOrder.get(getNextExhibitIndex() - 1);
 
-        ArrayList<String> directionsList = getDirections(startId, lastVisitedWaypoint.id);
+        ArrayList<String> directionsList = getDetailedDirections(startId, lastVisitedWaypoint.id);
 
         lastVisitedWaypoint.setVisited(false);
 
@@ -271,10 +271,16 @@ public class Route {
     /**
      * Gets the directions from user location to first unvisited exhibit
      * @param startId - location closest to user
+     * @param briefDirections - true if brief directions desired, false to get detailed directions
      * @return - list of directions
      */
-    public ArrayList<String> getDirectionsToNextExhibit(String startId) {
-        return getDirections(startId, routeOrder.get(getNextExhibitIndex()).id);
+    public ArrayList<String> getDirectionsToNextExhibit(String startId, boolean briefDirections) {
+        if (briefDirections) {
+            return getBriefDirections(startId, routeOrder.get(getNextExhibitIndex()).id);
+        }
+        else {
+            return getDetailedDirections(startId, routeOrder.get(getNextExhibitIndex()).id);
+        }
     }
 
     /**
@@ -282,9 +288,9 @@ public class Route {
      *  Assumes that the start and end are joined by Dijkstra pathway
      * @param startId - starting location id
      * @param endId - ending exhibit id
-     * @return ArrayList of directions from start to end locations
+     * @return ArrayList of directions from start to end locations (detailed)
      */
-    public ArrayList<String> getDirections(String startId, String endId) {
+    public ArrayList<String> getDetailedDirections(String startId, String endId) {
         ArrayList<String> directionsList = new ArrayList<>();
 
         // Get path of travel
@@ -293,7 +299,8 @@ public class Route {
         String currLocationId = startId;
         String nextLocationId;
         String prevStreet = null;
-        // Generate directions for each path
+
+        // Generate detailed directions for each path
         for (IdentifiedWeightedEdge e : path.getEdgeList()) {
             // Disambiguate next location's id (due to undirected graph)
             if (currLocationId.equals(zooGraph.getEdgeSource(e))) {
@@ -307,6 +314,64 @@ public class Route {
             currLocationId = nextLocationId;
             prevStreet = trailInfo.get(e.getId()).street;
         }
+
+        return directionsList;
+    }
+
+    /**
+     * Returns a list of brief directions from startId to endId
+     * @param startId - starting id location in zoo
+     * @param endId - ending id location in zoo
+     * @return ArrayList of directions (brief)
+     */
+    public ArrayList<String> getBriefDirections(String startId, String endId) {
+        ArrayList<String> directionsList = new ArrayList<>();
+
+        // Get path of travel
+        GraphPath<String, IdentifiedWeightedEdge> path = getPath(startId, endId);
+
+        String currLocationId = startId;
+        String nextLocationId;
+        String prevStreet = null;
+        String currStreet;
+
+        String currentDirections = "";
+        double totalDistance = 0.0;
+
+        for (IdentifiedWeightedEdge e : path.getEdgeList()) {
+            // Find next location ID
+            if (currLocationId.equals(zooGraph.getEdgeSource(e))) {
+                nextLocationId = zooGraph.getEdgeTarget(e);
+            } else {
+                nextLocationId = zooGraph.getEdgeSource(e);
+            }
+
+            currStreet = trailInfo.get(e.getId()).street;
+
+            // If first street, initialize beginning of first direction set
+            if (prevStreet == null) {
+                currentDirections = "Proceed on " + currStreet;
+                totalDistance += zooGraph.getEdgeWeight(e);
+            }
+            // If same street as previous, do not generate new directions
+            else if (prevStreet.equals(currStreet)) {
+                totalDistance += zooGraph.getEdgeWeight(e);
+            }
+            // If new street, finish previous directions with total distance, start new directions
+            else {
+                currentDirections = currentDirections + " " + totalDistance + " ft towards "
+                        + exhibitInfo.get(currLocationId).name;
+                directionsList.add(currentDirections);
+                currentDirections = "Proceed on " + currStreet;
+                totalDistance = zooGraph.getEdgeWeight(e);
+            }
+
+            currLocationId = nextLocationId;
+            prevStreet = currStreet;
+        }
+        currentDirections = currentDirections + " " + totalDistance + " ft towards "
+                + exhibitInfo.get(currLocationId).name;
+        directionsList.add(currentDirections);
 
         return directionsList;
     }

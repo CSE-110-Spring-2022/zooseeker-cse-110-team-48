@@ -8,7 +8,9 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.ToggleButton;
 
 import androidx.activity.result.ActivityResult;
 import androidx.activity.result.ActivityResultCallback;
@@ -16,6 +18,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.SwitchCompat;
 
 import java.util.ArrayList;
 import java.util.Map;
@@ -29,6 +32,7 @@ public class RouteActivity extends AppCompatActivity implements UserLocationTrac
 
     private Route route;
     private TextView directionView;
+    private boolean useBriefDirections = true;
 
     // Fields regarding user location, updated when tracker notifies this activity
     private Location userLocation;
@@ -76,6 +80,21 @@ public class RouteActivity extends AppCompatActivity implements UserLocationTrac
         prevButton.setOnClickListener(v -> {
             goToPrevExhibit();
         });
+
+        // Setup skip button
+        Button skipButton = findViewById(R.id.skip_button);
+        skipButton.setOnClickListener(v -> {
+            skipExhibit();
+        });
+
+        // Setup directions style toggle
+        SwitchCompat directionsToggle = findViewById(R.id.directions_style_toggle);
+        directionsToggle.setOnClickListener(v -> {
+            // If switch is checked, use detailed directions
+            useBriefDirections = !directionsToggle.isChecked();
+            updateDirectionsDisplay();
+        });
+
 
         // Setup mock injection button
         Button injectLocationButton = findViewById(R.id.inject_location_button);
@@ -127,9 +146,7 @@ public class RouteActivity extends AppCompatActivity implements UserLocationTrac
         this.nearestLocationId = getNearestLocationId();
 
         // Set directions
-        ArrayList<String> directions = route.getDirectionsToNextExhibit(this.nearestLocationId);
-        String collatedDirections = condenseDirectionsList(directions);
-        directionView.setText(collatedDirections);
+        updateDirectionsDisplay();
     }
 
     /**
@@ -149,11 +166,10 @@ public class RouteActivity extends AppCompatActivity implements UserLocationTrac
     private void goToNextExhibit() {
         if (!route.reachedEnd()) {
             route.advanceToNextExhibit(this.nearestLocationId);
-            ArrayList<String> directions = route.getDirectionsToNextExhibit(this.nearestLocationId);
-            directionView.setText(condenseDirectionsList(directions));
         } else {
             warningUtilities.showError(this, "Already at end of route!");
         }
+        updateDirectionsDisplay();
     }
 
     /**
@@ -162,11 +178,33 @@ public class RouteActivity extends AppCompatActivity implements UserLocationTrac
     private void goToPrevExhibit() {
         if (!route.atStart()) {
             route.returnToPreviousExhibit(this.nearestLocationId);
-            ArrayList<String> directions = route.getDirectionsToNextExhibit(this.nearestLocationId);
-            directionView.setText(condenseDirectionsList(directions));
         } else {
             warningUtilities.showError(this, "No exhibit to go back to!");
         }
+        updateDirectionsDisplay();
+    }
+
+    /**
+     * Skips the next exhibit in the route plan
+     */
+    private void skipExhibit() {
+        if (!route.reachedEnd()) {
+            route.skipNextExhibit(this.nearestLocationId);
+        } else {
+            warningUtilities.showError(this, "Already at end of route!");
+        }
+        updateDirectionsDisplay();
+    }
+
+    /**
+     * Updates the textview to have next directions, with next exhibit on top
+     */
+    private void updateDirectionsDisplay() {
+        String directionsContent = "";
+        directionsContent = directionsContent + "Next Exhibit: "
+                + route.routeOrder.get(route.getNextExhibitIndex()).name + "\n\n"
+                + condenseDirectionsList(route.getDirectionsToNextExhibit(this.nearestLocationId, useBriefDirections));
+        directionView.setText(directionsContent);
     }
 
     /**
@@ -201,9 +239,7 @@ public class RouteActivity extends AppCompatActivity implements UserLocationTrac
             offtrackIntent.putExtra("new_start_id", nearestLocationId);
             startActivityIntent.launch(offtrackIntent);
         } else {
-            ArrayList<String> directions = route.getDirectionsToNextExhibit(this.nearestLocationId);
-            String collatedDirections = condenseDirectionsList(directions);
-            directionView.setText(collatedDirections);
+            updateDirectionsDisplay();
         }
     }
 
