@@ -248,6 +248,11 @@ public class RouteActivity extends AppCompatActivity implements UserLocationTrac
         }
     }
 
+    public void onResume() {
+        super.onResume();
+        updateDirectionsDisplay();
+    }
+
     public void onClosedClicked(View view) {
         finish();
     }
