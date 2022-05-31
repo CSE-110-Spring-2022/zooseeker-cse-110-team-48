@@ -25,7 +25,7 @@ import java.util.Map;
 /**
  * Activity for the list of locations to visit, called from MainActivity
  */
-public class LocationsListActivity extends AppCompatActivity {
+public class LocationsListActivity extends AppCompatActivity implements OnAdapterItemClickListener{
     public RecyclerView recyclerView;
     private LocationsListViewModel viewModel;
     private LocationsListItemDao locationsListItemDao;
@@ -49,7 +49,7 @@ public class LocationsListActivity extends AppCompatActivity {
         this.viewModel = viewModel;
 
         // Set up adapter connection between recyclerView and database of locations
-        LocationsListAdapter adapter = new LocationsListAdapter();
+        LocationsListAdapter adapter = new LocationsListAdapter(this);
         adapter.setHasStableIds(true);
         adapter.setOnDeleteClickedHandler(viewModel::deleteLocation);
         viewModel.getLocationsListItems().observe(this, adapter::setLocationsListItems);
@@ -147,5 +147,10 @@ public class LocationsListActivity extends AppCompatActivity {
 
     public void onClosedClicked(View view) {
         finish();
+    }
+
+    @Override
+    public void onAdapterItemClickListener() {
+
     }
 }

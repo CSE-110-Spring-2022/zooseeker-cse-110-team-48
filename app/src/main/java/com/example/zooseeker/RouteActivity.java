@@ -128,7 +128,12 @@ public class RouteActivity extends AppCompatActivity implements UserLocationTrac
                         Location mockLocation = new Location("");
                         mockLocation.setLatitude(lat);
                         mockLocation.setLongitude(lng);
+
+                        // Set new last known location in tracker
+                        tracker.lastUserLocation = mockLocation;
+                        // Update route of new location
                         update(mockLocation);
+
                     })
                     .setNegativeButton("Cancel", (dialog, which) -> {
                         dialog.cancel();
